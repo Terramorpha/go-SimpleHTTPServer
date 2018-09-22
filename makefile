@@ -4,15 +4,19 @@ build: main.go
 	go build -o bin/web
 
 install: build
-	sudo cp -f web /bin/web
+	sudo cp -f bin/web /bin/web
 
 
 test: build runtest
 
+testr: build runtest_remote
+
 
 runtest:
-	./web -D -V 4 -dir /home/terramorpha
+	./bin/web -D -V 4 -dir /home/terramorpha
 
+runtest_remote:
+	sudo ./bin/web -D -V 4 -dir /home/terramorpha -port 80
 
 install_android:
 	GOOS=linux GOARCH=arm64 go build -o web_android
@@ -38,3 +42,17 @@ build_all: build_linux_amd64 build_win_amd64
 
 test_auth: build
 	./web -auth -p pass -u user -D -V 4
+
+
+
+test_fs: build run_fs
+
+
+run_fs:
+	./bin/web -mode fileserver -D -V 10 -port 8080
+
+
+sync:
+	git add .
+	git commit -m "sync automated"
+	git push

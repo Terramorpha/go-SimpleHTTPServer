@@ -11,8 +11,19 @@ DONE
 
 ###- log
 
+- implement "tell time" flag
+
+
 - implement basic authenticating
 DONE
 
 
 - implement web ui (lol)
+
+- colored terminal log (with switch)
+    DONE
+
+
+
+
+- file uploading(ghetto backups)
