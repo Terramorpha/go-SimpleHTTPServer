@@ -49,7 +49,7 @@ test_fs: build run_fs
 
 
 run_fs:
-	./bin/web -mode fileserver -D -V 10 -port 8080
+	./bin/web -mode fileserver -D -V 10 -port 8080 -dir ./fs
 
 
 sync:

@@ -4,26 +4,32 @@ DONE
 - implement HEAD requests
 DONE
 
-- Refactor
-DONE
+
 
 - implement more technical flags (shutdown timeout, force protocol, etc.)
-
+DONE
 ###- log
 
-- implement "tell time" flag
 
 
 - implement basic authenticating
 DONE
 
 
-- implement web ui (lol)
 
 - colored terminal log (with switch)
-    DONE
+DONE
 
 
 
+
+- implement "tell time" flag
 
 - file uploading(ghetto backups)
+    - make a proper system to read post requests
+
+- implement web ui (lol)
+
+
+
+- Refactor

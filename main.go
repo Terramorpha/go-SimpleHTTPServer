@@ -109,6 +109,8 @@ func init() { //preparing server and checking
 }
 
 func main() {
+
+	Test()
 	if isVerbose {
 		iPrintf("verbosity level: %d\n", verbosityLevel) //on dit le niveau de verbosité
 		iPrintf("mode: %s\n", mode)
@@ -465,8 +467,8 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}*/
 	var (
-		content []byte
-		files   [][]byte
+		//content []byte
+		files [][]byte
 	)
 	t := r.Header.Get("Content-Type")
 	vals := strings.Split(t, "; ")
@@ -475,24 +477,46 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) {
 		var separator string
 		fmt.Sscanf(vals[1], "boundary=%s", &separator)
 		dPrintln("separator:", separator)
-		content = make([]byte, r.ContentLength)
+		//content = make([]byte, r.ContentLength)
 		iPrintln("START")
-		n, err := r.Body.Read(content)
+		/*n, err := r.Body.Read(content)
 		if int64(n) != r.ContentLength {
 			wPrintln("ManagePost: couldn't read entire form:", err.Error())
 			return
 		}
+		*/
+		use(files)
+		for i := 0; true; i++ {
+			c, err := ReadSlice(r.Body, []byte("--"+separator))
+			dPrintln("CCC:", string(c))
+			if err != nil {
+				wPrintln(err)
+				if err == io.EOF {
+					break
+				}
+			}
+			if len(c) == 0 {
+				continue
+			}
+			files = append(files, c)
 
-		var (
-			header    string
-			headerMap map[string]string
-		)
-		b := bytes.NewReader()
-		for {
-			fmt.Fscanf(b, "")
 		}
 		//fmt.Fscanf(r.Body, "%s"+separator)
 		iPrintln("DONE")
+		fmt.Println(files)
+		f, err := ParseFormFile(files...)
+		if err != nil {
+			Fatal(err)
+		}
+		for _, v := range f {
+			file, err := os.Create(WorkingDir + r.URL.Path + "/" + v.FileName)
+			if err != nil {
+				wPrintln(err)
+				continue
+			}
+			defer file.Close()
+			file.Write(v.Data)
+		}
 	}
 	dPrintln(t)
 	iPrintln("GOT a Post request!!!")
@@ -529,7 +553,8 @@ func BasicFileServerHeader() string {
 
 const form = `
 <form method="post" enctype="multipart/form-data">
-<input type="file" name="My file" id="file" multiple/>
+<input type="file" id="file" multiple/>
+<input id="fileName" placeholder="name of file to upload"/>
 <button>Submit</button>
 </form>
 `
@@ -795,4 +820,99 @@ func Flags() {
 		flag.Parse() //on interprète
 
 	}
+}
+
+func ReadSlice(r io.Reader, delim []byte) ([]byte, error) {
+	var (
+		iDelim    int
+		out       []byte = make([]byte, 0, len(delim))
+		middleMan []byte = make([]byte, 0)
+		oneByte          = make([]byte, 1)
+	)
+
+	for iDelim < len(delim) {
+		//dPrintln("i", iDelim, string(out))
+		_, err := r.Read(oneByte)
+		if err != nil {
+			return out, err
+		}
+		if oneByte[0] != delim[iDelim] {
+			out = append(out, middleMan...)
+			middleMan = make([]byte, 0)
+			out = append(out, oneByte[0])
+			iDelim = 0
+			continue
+		}
+		middleMan = append(middleMan, oneByte[0])
+		iDelim++
+	}
+	return out, nil
+}
+
+func Test() {
+	return
+	a := "marmelade"
+	b := bytes.NewReader([]byte(a))
+	o, err := ReadSlice(b, []byte("me"))
+	fmt.Println(string(o), err)
+}
+
+type FormFile struct {
+	Data           []byte
+	FileName       string
+	WantedFileName string
+}
+
+func ParseFormFile(x ...[]byte) ([]*FormFile, error) {
+	o := make([]*FormFile, 0)
+	for _, v := range x {
+		next := new(FormFile)
+		var (
+			FileName string
+			Content  []byte
+		)
+		b := bytes.NewReader(v)
+		f, err := ReadSlice(b, []byte("\r\n\r\n"))
+		if err != nil {
+			return nil, err
+		}
+		header := string(f)
+		headerMap := ParseHeader(header)
+		s, ok := headerMap["Content-Disposition"]
+		if !ok {
+			ePrintln(v, headerMap)
+		}
+		split := strings.Split(s, "; ")
+		m := map[string]string{}
+		for _, v := range split {
+			duo := strings.Split(v, "=")
+			if len(duo) != 2 {
+				continue
+			}
+			m[duo[0]] = strings.TrimPrefix(strings.TrimSuffix(m[duo[1]], "\""), "\"")
+		}
+		FileName = m["filename"]
+		Content, err = ioutil.ReadAll(b)
+		if err != nil {
+			return nil, err
+		}
+		next.Data = Content
+		next.FileName = FileName
+		o = append(o, next)
+	}
+	return o, nil
+}
+
+func ParseHeader(x string) map[string]string {
+	o := map[string]string{}
+
+	for _, v := range strings.Split(x, "\r\n") {
+		if v == "" {
+			continue
+		}
+		split := strings.Split(v, ": ")
+		o[split[0]] = split[1]
+	}
+
+	return o
 }
