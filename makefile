@@ -18,6 +18,9 @@ runtest:
 runtest_remote:
 	sudo ./bin/web -D -V 4 -dir /home/terramorpha -port 80
 
+runtest_auth: build
+	./bin/web -D -V 4 -auth -dir /home/terramorpha
+
 install_android:
 	GOOS=linux GOARCH=arm64 go build -o web_android
 	adb push --sync web_android /sdcard/dev/web

@@ -1,0 +1,75 @@
+[32m[INFOS][0m verbosity level: 5
+[32m[INFOS][0m mode: 
+[32m[INFOS][0m auth enabled
+Username:
+Password:
+[36m[DEBUG][0m [{1 65536 lo  up|loopback} {2 1500 enp0s31f6 38:d5:47:e1:e9:b8 up|broadcast|multicast} {3 1500 docker0 02:42:8c:ea:f3:70 up|broadcast|multicast}]
+[36m[DEBUG][0m addresses of interface 1: [192.168.0.137/24 fe80::4f12:be25:15fd:2e3b/64]
+[36m[DEBUG][0m addresses of interface 2: [172.17.0.1/16]
+[37m[VERBO][0m other address: 192.168.0.137
+[37m[VERBO][0m other address: fe80::4f12:be25:15fd:2e3b
+[37m[VERBO][0m other address: 172.17.0.1
+[32m[INFOS][0m you can connect to this server on:
+[32m[INFOS][0m serving ./ on port 8080
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [0] got GET request to localhost:8080 from 127.0.0.1:58788 (/)
+[37m[VERBO][0m [0] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [0] at 127.0.0.1:58788
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [1] got GET request to localhost:8080 from 127.0.0.1:58790 (/)
+[37m[VERBO][0m [1] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [1] at 127.0.0.1:58790
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [2] got GET request to localhost:8080 from 127.0.0.1:58792 (/)
+[37m[VERBO][0m [2] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [2] at 127.0.0.1:58792
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [3] got GET request to localhost:8080 from 127.0.0.1:58794 (/)
+[37m[VERBO][0m [3] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [3] at 127.0.0.1:58794
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [4] got GET request to localhost:8080 from 127.0.0.1:58796 (/)
+[37m[VERBO][0m [4] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [4] at 127.0.0.1:58796
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [5] got GET request to localhost:8080 from 127.0.0.1:58798 (/)
+[37m[VERBO][0m [5] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [5] at 127.0.0.1:58798
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [6] got GET request to localhost:8080 from 127.0.0.1:58800 (/)
+[37m[VERBO][0m [6] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [6] at 127.0.0.1:58800
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [7] got GET request to localhost:8080 from 127.0.0.1:58802 (/)
+[37m[VERBO][0m [7] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [7] at 127.0.0.1:58802
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [8] got GET request to localhost:8080 from 127.0.0.1:58804 (/)
+[37m[VERBO][0m [8] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [8] at 127.0.0.1:58804
+[36m[DEBUG][0m username:  password: 
+[37m[VERBO][0m [9] got GET request to localhost:8080 from 127.0.0.1:58806 (/)
+[37m[VERBO][0m [9] asking for /
+[36m[DEBUG][0m file opened: .//
+[37m[VERBO][0m .// is a folder
+[37m[VERBO][0m finished serving [9] at 127.0.0.1:58806
+[36m[DEBUG][0m interrupt
+[32m[INFOS][0m server shutdown cleanly

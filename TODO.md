@@ -8,7 +8,11 @@ DONE
 
 - implement more technical flags (shutdown timeout, force protocol, etc.)
 DONE
-###- log
+
+
+
+
+- implement log log
 
 
 
@@ -32,4 +36,6 @@ DONE
 
 
 
-- Refactor
+- Refactor <<<<<-
+
+

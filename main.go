@@ -23,6 +23,29 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const ( //terminal colors
+	ColorReset      = 0
+	ColorBold       = 1
+	ColorDim        = 2
+	ColorUnderlined = 4
+	ColorBlink      = 5
+	ColorReversed   = 7
+	ColorHidden     = 8
+
+	ColorBlack   = 0
+	ColorRed     = 1
+	ColorGreen   = 2
+	ColorYellow  = 3
+	ColorBlue    = 4
+	ColorMagenta = 5
+	ColorCyan    = 6
+	ColorGrey    = 7
+)
+
+var ( //error constants
+	ErrorUnauthorized = errors.New("CheckAuth: client didn't provide correct authorization")
+)
+
 var ( //where we put flag variables and global variables
 	//User contains all information about the user running the program (currently only used to check if program is run as root)
 	User    *user.User
@@ -47,6 +70,38 @@ var ( //where we put flag variables and global variables
 
 	isColorEnabled bool
 )
+
+func main() {
+	if isVerbose {
+		iPrintf("verbosity level: %d\n", verbosityLevel) //on dit le niveau de verbosité
+		iPrintf("mode: %s\n", mode)
+	}
+
+	if isAuthEnabled {
+		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", authUsername, authPassword)
+	}
+	han := new(mainHandler) //l'endroit où le serveur stockera ses variables tel que le nb de connections
+	server := &http.Server{Addr: ":" + port, Handler: han}
+	server.SetKeepAlivesEnabled(isKeepAliveEnabled)
+	addrs := GetAddress()
+	iPrintln("you can connect to this server on:")
+	for _, v := range addrs {
+		fmt.Printf("http://%s/\n", net.JoinHostPort(v.String(), strconv.Itoa(portNum)))
+	}
+	if isTLS { //l'encryption n'est pas implémentée, don si elle activée, crash
+		Fatal(errors.New("tls not yet implemented"))
+	}
+	if isWebUIEnabled {
+		go WebUi()
+	}
+	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
+	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
+	iPrintf("serving %s on port %s\n", WorkingDir, port)
+	if err := server.ListenAndServe(); err != http.ErrServerClosed { //sert les requêtes http sur le listener et le stockage choisi
+		Fatal(err)
+	}
+	<-done
+}
 
 func init() { //preparing server and checking
 	Flags()
@@ -108,44 +163,15 @@ func init() { //preparing server and checking
 	}
 }
 
-func main() {
-
-	Test()
-	if isVerbose {
-		iPrintf("verbosity level: %d\n", verbosityLevel) //on dit le niveau de verbosité
-		iPrintf("mode: %s\n", mode)
-	}
-
-	if isAuthEnabled {
-		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", authUsername, authPassword)
-	}
-	han := new(mainHandler) //l'endroit où le serveur stockera ses variables tel que le nb de connections
-	server := &http.Server{Addr: ":" + port, Handler: han}
-	server.SetKeepAlivesEnabled(isKeepAliveEnabled)
-	addrs := GetAddress()
-	iPrintln("you can connect to this server on:")
-	for _, v := range addrs {
-		fmt.Printf("http://%s/\n", net.JoinHostPort(v.String(), strconv.Itoa(portNum)))
-	}
-	if isTLS { //l'encryption n'est pas implémentée, don si elle activée, crash
-		Fatal(errors.New("tls not yet implemented"))
-	}
-	if isWebUIEnabled {
-		go WebUi()
-	}
-	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
-	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
-	iPrintf("serving %s on port %s\n", WorkingDir, port)
-	if err := server.ListenAndServe(); err != http.ErrServerClosed { //sert les requêtes http sur le listener et le stockage choisi
-		Fatal(err)
-	}
-	<-done
-}
-
 type mainHandler struct {
 	//ReqCount is a simple tracker for the number of http Request mainHandler has received
 	Requests  int
 	Succeeded int
+	logBuffer string
+}
+
+func (m *mainHandler) Log(x ...interface{}) {
+	m.logBuffer += fmt.Sprintln(x...)
 }
 
 func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -157,164 +183,56 @@ func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		m.ManageHEAD(w, r)
 	case "POST":
 		m.ManagePOST(w, r)
+	case "CONNECT":
+		m.ManageCONNECT(w, r)
+	default:
+		iPrintln("Got request:", r.Method)
+		iPrintln("header:", r.Header)
 	}
 
 }
 
-func (m *mainHandler) NewRequest() int {
+func (m *mainHandler) ManageCONNECT(w http.ResponseWriter, r *http.Request) { //currently shit
+	return
+	dPrintf("%#+v\n", r.URL)
+
+	conn, err := net.Dial("tcp", r.URL.Host)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	io.Copy(w, conn)
+}
+
+func (m *mainHandler) NewRequest() int { //assigns a request number
 	a := m.Requests
 	m.Requests++
 	return a
 }
-
-func iPrint(a ...interface{}) (int, error) {
-	return fmt.Printf("%s %s", Colorize("[INFOS]", ColorGreen), fmt.Sprint(a...))
-}
-
-func iPrintln(a ...interface{}) (int, error) {
-	return iPrint(fmt.Sprintln(a...))
-}
-
-func iPrintf(format string, a ...interface{}) (int, error) {
-	return iPrint(fmt.Sprintf(format, a...))
-}
-
-func ePrint(a ...interface{}) (int, error) {
-	return fmt.Printf("%s %s", Colorize("[ERROR]", ColorRed), fmt.Sprint(a...))
-}
-
-func ePrintln(a ...interface{}) (int, error) {
-	return ePrint(fmt.Sprintln(a...))
-}
-
-func ePrintf(format string, a ...interface{}) (int, error) {
-	return ePrint(fmt.Sprintf(format, a...))
-}
-
-func wPrint(a ...interface{}) (int, error) {
-	return fmt.Printf("%s %s", Colorize("[WARN ]", ColorYellow), fmt.Sprint(a...))
-}
-
-func wPrintln(a ...interface{}) (int, error) {
-	return wPrint(fmt.Sprintln(a...))
-}
-
-func wPrintf(format string, a ...interface{}) (int, error) {
-	return wPrint(fmt.Sprintf(format, a...))
-}
-
-func vPrint(verbosityTreshold int, x ...interface{}) (int, error) {
-	if verbosityLevel < verbosityTreshold {
-		return 0, nil
-	}
-
-	return fmt.Print(fmt.Sprintf("%s %s", Colorize("[VERBO]", ColorGrey), fmt.Sprint(x...)))
-
-}
-
-func vPrintf(verbosityTreshold int, f string, a ...interface{}) (int, error) { //log des choses selon le degré de verbosité
-
-	return vPrint(verbosityTreshold, fmt.Sprintf(f, a...))
-}
-
-func vPrintln(t int, a ...interface{}) (int, error) {
-	return vPrint(t, a...)
-}
-
-func Colorize(x string, code int) string {
-	if isColorEnabled {
-		return TextColor(code) + x + TextReset()
-	}
-	return x
-}
-
-func ceil(x, y int) int {
-	if x > y {
-		return y
-	}
-	return x
-}
-
-func dPrintln(x ...interface{}) (int, error) {
-	if !isDebug {
-		return 0, nil
-	}
-	return dPrint(fmt.Sprintln(x...))
-}
-
-func dPrint(x ...interface{}) (int, error) {
-
-	if !isDebug {
-		return 0, nil
-	}
-	return fmt.Print(fmt.Sprintf("%s %s", Colorize("[DEBUG]", ColorCyan), fmt.Sprint(x...)))
-}
-
-func dPrintf(format string, x ...interface{}) (int, error) {
-	if !isDebug {
-		return 0, nil
-	}
-	return dPrint(fmt.Sprintf(format, x...))
-}
-
-func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBody bool) {
-
-	if isAuthEnabled {
-		{ //basic auth
-			var (
-				password string
-				username string
-				err      error
-				result   []byte
-			)
-			var (
-				authScheme string
-				s          string
-			)
-			total := r.Header.Get("Authorization")
-			if total == "" {
-				w.Header().Add("WWW-Authenticate", "Basic")
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-
-			_, err = fmt.Sscanf(total, "%s %s", &authScheme, &s)
-			if err != nil {
-				fmt.Println(err)
-				w.Header().Add("WWW-Authenticate", "Basic")
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-
-			result, err = base64.StdEncoding.DecodeString(s)
-			if err != nil {
-				fmt.Println(err)
-				w.Header().Add("WWW-Authenticate", "Basic")
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-
-			split := strings.Split(string(result), ":")
-			username, password = split[0], split[1]
-			dPrintf("username: %s password: %s\n", username, password)
-			if password != authPassword || username != authUsername {
-				w.Header().Add("WWW-Authenticate", "Basic")
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-		}
-	}
+func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBody bool) { //serves get requests
 
 	var (
 		MimeType string
+		id       = m.NewRequest() // request id
 	)
 
-	id := m.NewRequest() // request id
-	{                    //logging
+	if isAuthEnabled { //basic auth
+		err := CheckAuth(w, r)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			vPrintf(1, "failed auth from %v: %s\n", r.RemoteAddr, err.Error())
+		}
 
-		vPrintf(1, "[%d] got %s request to %v from %v (%v)\n", id, r.Method, r.Host, r.RemoteAddr, r.RequestURI)
-		vPrintf(2, "received request %v\n", *r)
-		defer vPrintf(1, "finished serving [%d] at %v\n", id, r.RemoteAddr)
+	}
+
+	{ //logging
+		log := fmt.Sprintf("[%d] got %s request to %v from %v (%v)\n", id, r.Method, r.Host, r.RemoteAddr, r.RequestURI)
+		finishedServing := fmt.Sprintf("finished serving [%d] at %v\n", id, r.RemoteAddr)
+		m.Log(log)
+		vPrintf(1, log)
+		defer vPrintf(1, finishedServing)
+		defer m.Log(1, finishedServing)
 	}
 	// the actual URL
 	if isDebug {
@@ -337,7 +255,8 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	File, err := os.Open(ComposedPath)
 	if err != nil { //the file simply doesn't exist or is inaccessible
 		vPrintf(1, "[%d] request failed: %v\n", id, err)
-		http.Error(w, err.Error(), http.StatusNotFound)
+		//too informative//http.Error(w, err.Error(), http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	dPrintf("file opened: %s\n", ComposedPath)
@@ -352,6 +271,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		return
 	}
 	if fileInfo.IsDir() { //the path pointed to by the URL exists AND is a folder
+		vPrintf(1, "%s is a folder\n", ComposedPath)
 		var (
 			lastModified string = time.Now().UTC().Format(http.TimeFormat)
 			content      []byte
@@ -452,7 +372,10 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 
 	//vPrintf(1, "accept-ranges:   %s\n", w.Header().Get("Accept-Ranges"))
 	if writeBody {
-		io.CopyN(w, File, NumBytesToCopy)
+		_, err = io.CopyN(w, File, NumBytesToCopy)
+		if err != nil {
+			dPrintln("error io.Copy-ing:", err)
+		}
 	}
 }
 
@@ -461,11 +384,12 @@ func (m *mainHandler) ManageHEAD(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) {
-	/*f, err := os.Create(strconv.Itoa(int(time.Now().Unix())))
-	if err != nil {
-		ePrintln(err)
+	fmt.Println(r.URL)
+	fmt.Println(r.Header)
+	io.CopyN(os.Stdout, r.Body, r.ContentLength)
+	if mode != "fileserver" {
 		return
-	}*/
+	}
 	var (
 		//content []byte
 		files [][]byte
@@ -559,32 +483,6 @@ const form = `
 </form>
 `
 
-func ManageServer(server *http.Server) chan int {
-	done := make(chan int)
-	go func(ret chan int) {
-		channel := make(chan os.Signal)
-		signal.Notify(channel, os.Interrupt)
-		<-channel
-		dPrintln("interrupt")
-		fmt.Printf("server shutting down in %v\n", shutdowmTimeout.String())
-		ctx, _ := context.WithTimeout(context.Background(), shutdowmTimeout)
-		select {
-		case <-WaitXInterrupt(10, channel):
-			iPrintln("server shutdown forcefully")
-		case err := <-waitTillDone(func() error { return server.Shutdown(ctx) }):
-			if err != nil {
-				dPrintln(err)
-				ePrintln("server shutdown forcefully")
-			} else {
-				iPrintln("server shutdown cleanly")
-
-			}
-		}
-		ret <- 0
-	}(done)
-	return done
-}
-
 func ParseDuration(s string) (time.Duration, error) {
 	var char rune
 	var num int
@@ -602,26 +500,6 @@ func ParseDuration(s string) (time.Duration, error) {
 	default:
 		return 0, errors.New("invalid time unit")
 	}
-}
-
-func WaitXInterrupt(x int, c chan os.Signal) chan struct{} {
-	ret := make(chan struct{})
-	go func() {
-		for i := x; i >= 0; i-- {
-			<-c
-			iPrintf("\n%d interrupts remaining before force shutdown\n", i)
-		}
-		ret <- struct{}{}
-	}()
-	return ret
-}
-
-func waitTillDone(f func() error) chan error {
-	o := make(chan error)
-	go func() {
-		o <- f()
-	}()
-	return o
 }
 
 //GetAddress is a simple way to get main ip address
@@ -681,27 +559,6 @@ func use(x ...interface{}) {
 
 }
 
-func WebUi() {
-	var (
-		err error
-	)
-
-	han := new(settingsHandler)
-	han.wsUpgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-
-	listener, err := net.Listen("tcp", ":"+strconv.Itoa(webUIPort))
-	if err != nil {
-		panic(err)
-	}
-	err = http.Serve(listener, han)
-	if err != nil {
-		panic(err)
-	}
-}
-
 type settingsHandler struct {
 	wsUpgrader websocket.Upgrader
 }
@@ -733,93 +590,6 @@ type SettingsUpdate struct {
 
 func (s *settingsHandler) ManageWebsocket(c *websocket.Conn) {
 
-}
-
-const (
-	ColorReset      = 0
-	ColorBold       = 1
-	ColorDim        = 2
-	ColorUnderlined = 4
-	ColorBlink      = 5
-	ColorReversed   = 7
-	ColorHidden     = 8
-
-	ColorBlack   = 0
-	ColorRed     = 1
-	ColorGreen   = 2
-	ColorYellow  = 3
-	ColorBlue    = 4
-	ColorMagenta = 5
-	ColorCyan    = 6
-	ColorGrey    = 7
-)
-
-func TextColor(colorCode int) string {
-	return fmt.Sprintf("\033[3%dm", colorCode)
-}
-
-func TextStyle(styleCode int) string {
-	return fmt.Sprintf("\033[%dm", styleCode)
-}
-
-func TextReset() string {
-	return fmt.Sprintf("\033[%dm", ColorReset)
-}
-func Fatal(x interface{}) {
-	ePrintln(x)
-	panic(x)
-}
-
-func Flags() {
-	{ //flag declaring and parsing
-		{ //standard
-			//port number
-			flag.StringVar(&port, "port", "8080", "defines the TCP port on which the web server is going to serve (must be a valid port number)") // le port (par défault c'est le 8080)
-
-			//working dir
-			flag.StringVar(&WorkingDir, "dir", "./", "defines the directory the server is goig to serve") //le scope du serveur(les fichiers qui seront servit)
-			//	 par défault c'est le fichier duquel le programme a été commencé
-
-		}
-
-		{ //log/info/debugging/on veut du text de couleur
-			flag.BoolVar(&isVerbose, "v", false, "make the program more verbose")               //si on dit pleins d'informations
-			flag.IntVar(&verbosityLevel, "V", 0, "sets the degree of verbosity of the program") //le niveau d'information plus ou moins utiles que l'on dit
-
-			flag.BoolVar(&isDebug, "D", false, "used to show internal values usefule for debuging")
-		}
-
-		goto Apres
-		{ //patentes qui marchent pas
-			flag.BoolVar(&isTLS, "tls", false, "enables tls encryption (not yet implemented)") //si on utilise une encryption
-
-		}
-	Apres:
-		{ //server specific
-			flag.BoolVar(&isKeepAliveEnabled, "A", false, "enables http keep-alives")
-			flag.DurationVar(&shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
-			flag.StringVar(&mode, "mode", "", "sets server mode")
-			{ // web ui flags
-				flag.BoolVar(&isWebUIEnabled, "webui", false, "enables web ui")
-				flag.IntVar(&webUIPort, "uiPort", 8080, "specifies web ui port")
-			}
-		}
-
-		flag.BoolVar(&isColorEnabled, "color", true, "enables or disables color in terminal log")
-
-		{ //auth flags
-			flag.BoolVar(&isAuthEnabled, "auth", false, "enable password access")
-			flag.StringVar(&authPassword, "p", "", "sets the required password when authentification is enabled")
-			flag.StringVar(&authUsername, "u", "", "sets the required password when authentification is enabled")
-		}
-
-		{ // file server (mode is fileServer)
-
-		}
-
-		flag.Parse() //on interprète
-
-	}
 }
 
 func ReadSlice(r io.Reader, delim []byte) ([]byte, error) {
@@ -915,4 +685,273 @@ func ParseHeader(x string) map[string]string {
 	}
 
 	return o
+}
+
+func ReadPostRequest(x string) map[string]string {
+	o := make(map[string]string)
+	split := strings.Split(x, "&")
+	for _, v := range split {
+		pair := strings.Split(v, "=")
+		o[pair[0]] = pair[1]
+	}
+	return o
+}
+func WaitXInterrupt(x int, c chan os.Signal) chan struct{} {
+	ret := make(chan struct{})
+	go func() {
+		for i := x; i >= 0; i-- {
+			<-c
+			iPrintf("\n%d interrupts remaining before force shutdown\n", i)
+		}
+		ret <- struct{}{}
+	}()
+	return ret
+}
+
+func waitTillDone(f func() error) chan error {
+	o := make(chan error)
+	go func() {
+		o <- f()
+	}()
+	return o
+}
+
+func ManageServer(server *http.Server) chan int {
+	done := make(chan int)
+	go func(ret chan int) {
+		channel := make(chan os.Signal)
+		signal.Notify(channel, os.Interrupt)
+		<-channel
+		dPrintln("interrupt")
+		fmt.Printf("server shutting down in %v\n", shutdowmTimeout.String())
+		ctx, _ := context.WithTimeout(context.Background(), shutdowmTimeout)
+		select {
+		case <-WaitXInterrupt(10, channel):
+			iPrintln("server shutdown forcefully")
+		case err := <-waitTillDone(func() error { return server.Shutdown(ctx) }):
+			if err != nil {
+				dPrintln(err)
+				ePrintln("server shutdown forcefully")
+			} else {
+				iPrintln("server shutdown cleanly")
+
+			}
+		}
+		ret <- 0
+	}(done)
+	return done
+}
+
+func WebUi() {
+	var (
+		err error
+	)
+
+	han := new(settingsHandler)
+	han.wsUpgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(webUIPort))
+	if err != nil {
+		panic(err)
+	}
+	err = http.Serve(listener, han)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Flags() {
+	{ //flag declaring and parsing
+		{ //standard
+			//port number
+			flag.StringVar(&port, "port", "8080", "defines the TCP port on which the web server is going to serve (must be a valid port number)") // le port (par défault c'est le 8080)
+
+			//working dir
+			flag.StringVar(&WorkingDir, "dir", "./", "defines the directory the server is goig to serve") //le scope du serveur(les fichiers qui seront servit)
+			//	 par défault c'est le fichier duquel le programme a été commencé
+
+		}
+
+		{ //log/info/debugging/on veut du text de couleur
+			flag.BoolVar(&isVerbose, "v", false, "make the program more verbose")               //si on dit pleins d'informations
+			flag.IntVar(&verbosityLevel, "V", 0, "sets the degree of verbosity of the program") //le niveau d'information plus ou moins utiles que l'on dit
+
+			flag.BoolVar(&isDebug, "D", false, "used to show internal values usefule for debuging")
+		}
+
+		goto Apres
+		{ //patentes qui marchent pas
+			flag.BoolVar(&isTLS, "tls", false, "enables tls encryption (not yet implemented)") //si on utilise une encryption
+
+		}
+	Apres:
+		{ //server specific
+			flag.BoolVar(&isKeepAliveEnabled, "A", false, "enables http keep-alives")
+			flag.DurationVar(&shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
+			flag.StringVar(&mode, "mode", "", "sets server mode")
+			{ // web ui flags
+				flag.BoolVar(&isWebUIEnabled, "webui", false, "enables web ui")
+				flag.IntVar(&webUIPort, "uiPort", 8080, "specifies web ui port")
+			}
+		}
+
+		flag.BoolVar(&isColorEnabled, "color", true, "enables or disables color in terminal log")
+
+		{ //auth flags
+			flag.BoolVar(&isAuthEnabled, "auth", false, "enable password access")
+			flag.StringVar(&authPassword, "p", "", "sets the required password when authentification is enabled")
+			flag.StringVar(&authUsername, "u", "", "sets the required password when authentification is enabled")
+		}
+
+		{ // file server (mode is fileServer)
+
+		}
+
+		flag.Parse() //on interprète
+
+	}
+}
+
+func TextColor(colorCode int) string {
+	return fmt.Sprintf("\033[3%dm", colorCode)
+}
+
+func TextStyle(styleCode int) string {
+	return fmt.Sprintf("\033[%dm", styleCode)
+}
+
+func TextReset() string {
+	return fmt.Sprintf("\033[%dm", ColorReset)
+}
+
+func Fatal(x interface{}) {
+	ePrintln(x)
+	panic(x)
+}
+
+func iPrint(a ...interface{}) (int, error) {
+	return fmt.Fprintf(os.Stderr, "%s %s", Colorize("[INFOS]", ColorGreen), fmt.Sprint(a...))
+}
+
+func iPrintln(a ...interface{}) (int, error) {
+	return iPrint(fmt.Sprintln(a...))
+}
+
+func iPrintf(format string, a ...interface{}) (int, error) {
+	return iPrint(fmt.Sprintf(format, a...))
+}
+
+func ePrint(a ...interface{}) (int, error) {
+	return fmt.Printf("%s %s", Colorize("[ERROR]", ColorRed), fmt.Sprint(a...))
+}
+
+func ePrintln(a ...interface{}) (int, error) {
+	return ePrint(fmt.Sprintln(a...))
+}
+
+func ePrintf(format string, a ...interface{}) (int, error) {
+	return ePrint(fmt.Sprintf(format, a...))
+}
+
+func wPrint(a ...interface{}) (int, error) {
+	return fmt.Printf("%s %s", Colorize("[WARN ]", ColorYellow), fmt.Sprint(a...))
+}
+
+func wPrintln(a ...interface{}) (int, error) {
+	return wPrint(fmt.Sprintln(a...))
+}
+
+func wPrintf(format string, a ...interface{}) (int, error) {
+	return wPrint(fmt.Sprintf(format, a...))
+}
+
+func vPrint(verbosityTreshold int, x ...interface{}) (int, error) {
+	if verbosityLevel < verbosityTreshold {
+		return 0, nil
+	}
+
+	return fmt.Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[VERBO]", ColorGrey), fmt.Sprint(x...)))
+
+}
+
+func vPrintf(verbosityTreshold int, f string, a ...interface{}) (int, error) { //log des choses selon le degré de verbosité
+
+	return vPrint(verbosityTreshold, fmt.Sprintf(f, a...))
+}
+
+func vPrintln(t int, a ...interface{}) (int, error) {
+	return vPrint(t, a...)
+}
+
+func Colorize(x string, code int) string {
+	if isColorEnabled {
+		return TextColor(code) + x + TextReset()
+	}
+	return x
+}
+
+func dPrintln(x ...interface{}) (int, error) {
+	if !isDebug {
+		return 0, nil
+	}
+	return dPrint(fmt.Sprintln(x...))
+}
+
+func dPrint(x ...interface{}) (int, error) {
+
+	if !isDebug {
+		return 0, nil
+	}
+	return fmt.Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[DEBUG]", ColorCyan), fmt.Sprint(x...)))
+}
+
+func dPrintf(format string, x ...interface{}) (int, error) {
+	if !isDebug {
+		return 0, nil
+	}
+	return dPrint(fmt.Sprintf(format, x...))
+}
+
+func CheckAuth(w http.ResponseWriter, r *http.Request) error {
+
+	w.Header().Add("WWW-Authenticate", "Basic") //add new login schemes
+
+	var (
+		password string
+		username string
+		err      error
+		result   []byte
+	)
+	var (
+		authScheme string
+		s          string
+	)
+	total := r.Header.Get("Authorization") //checking if client knows he needs auth
+	if total == "" {                       //he doesn't know
+		return ErrorUnauthorized
+	}
+
+	_, err = fmt.Sscanf(total, "%s %s", &authScheme, &s)
+	if err != nil {
+		fmt.Println(err)
+
+		return ErrorUnauthorized
+	}
+
+	result, err = base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		fmt.Println(err)
+		return ErrorUnauthorized
+	}
+
+	split := strings.Split(string(result), ":")
+	username, password = split[0], split[1]
+	dPrintf("username: %s password: %s\n", username, password)
+	if password != authPassword || username != authUsername {
+		return ErrorUnauthorized
+	}
+	return nil
 }
