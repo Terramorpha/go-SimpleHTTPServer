@@ -1,0 +1,1 @@
+fixed the EOF when opening files less than 512 bytes in size

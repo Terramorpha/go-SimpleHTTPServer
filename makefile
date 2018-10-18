@@ -21,6 +21,14 @@ runtest_remote:
 runtest_auth: build
 	./bin/web -D -V 4 -auth -dir /home/terramorpha
 
+runtest_web: build
+	sudo ./bin/web -mode web -D -V 4 -dir ./site -port 80
+
+
+runtest_fs: build
+	./bin/web -mode fileserver -D -V 10 -port 8080 -dir ./fs
+
+
 install_android:
 	GOOS=linux GOARCH=arm64 go build -o web_android
 	adb push --sync web_android /sdcard/dev/web
@@ -43,16 +51,6 @@ build_linux_arm64:
 
 build_all: build_linux_amd64 build_win_amd64
 
-test_auth: build
-	./web -auth -p pass -u user -D -V 4
-
-
-
-test_fs: build run_fs
-
-
-run_fs:
-	./bin/web -mode fileserver -D -V 10 -port 8080 -dir ./fs
 
 
 sync:

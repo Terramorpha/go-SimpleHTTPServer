@@ -42,6 +42,10 @@ const ( //terminal colors
 	ColorGrey    = 7
 )
 
+const (
+	defaultWorkingDir = "."
+)
+
 var ( //error constants
 	ErrorUnauthorized = errors.New("CheckAuth: client didn't provide correct authorization")
 )
@@ -86,7 +90,7 @@ func main() {
 	addrs := GetAddress()
 	iPrintln("you can connect to this server on:")
 	for _, v := range addrs {
-		fmt.Printf("http://%s/\n", net.JoinHostPort(v.String(), strconv.Itoa(portNum)))
+		fmt.Printf("        "+"http://%s/\n", net.JoinHostPort(v.String(), strconv.Itoa(portNum)))
 	}
 	if isTLS { //l'encryption n'est pas implémentée, don si elle activée, crash
 		Fatal(errors.New("tls not yet implemented"))
@@ -171,7 +175,8 @@ type mainHandler struct {
 }
 
 func (m *mainHandler) Log(x ...interface{}) {
-	m.logBuffer += fmt.Sprintln(x...)
+	m.logBuffer += fmt.Sprintf("[%s] %s\n", time.Now().UTC().Format(http.TimeFormat), fmt.Sprint(x...))
+
 }
 
 func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -242,6 +247,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	vPrintf(1, "[%d] asking for %v\n", id, r.URL.EscapedPath())
 
 	ComposedPath := WorkingDir + path.Clean(r.URL.Path)
+	fmt.Println(ComposedPath)
 	//vPrintf(0, "%s\n", ComposedPath)
 	if strings.Contains(r.RequestURI, "../") { // ../ permits a request to access files outside the server's scope
 		//w.Header().Add("Connection", "close")
@@ -256,10 +262,15 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	if err != nil { //the file simply doesn't exist or is inaccessible
 		vPrintf(1, "[%d] request failed: %v\n", id, err)
 		//too informative//http.Error(w, err.Error(), http.StatusNotFound)
-		w.WriteHeader(http.StatusNotFound)
+		if os.IsNotExist(err) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	dPrintf("file opened: %s\n", ComposedPath)
+	//fmt.Println(*File)
 	defer File.Close()
 	//file exists
 
@@ -290,12 +301,14 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				vPrintf(2, "[%d] error reading index.html: %v\n", id, err)
+				return
 			}
 		case "fileserver":
 			renderedFolder, err := render(WorkingDir, r.URL.Path)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				vPrintf(2, "[%d] error reading index.html: %v\n", id, err)
+				return
 			}
 			content = []byte(fmt.Sprintf(BasicHTMLFile(), "", BasicFileServerHeader()+string(renderedFolder)))
 		}
@@ -303,7 +316,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		w.Header().Add("Content-Length", strconv.Itoa(size))
 		w.Header().Add("Last-Modified", lastModified)
 
-		if writeBody {
+		if writeBody { //this is a render or a template, not a real file
 			w.Write(content)
 		}
 		return
@@ -315,17 +328,19 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 
 	{ //mime-type detection
 		DetectBuff := make([]byte, 512)
-		_, err = File.ReadAt(DetectBuff, 0)
+		n, err := File.ReadAt(DetectBuff, 0)
+		//fmt.Println("N:::", n)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			vPrintf(1, "[%d] error reading file: %v\n", id, err)
-			return
+			if err != io.EOF {
+				w.WriteHeader(http.StatusInternalServerError)
+				vPrintf(1, "[%d] error reading file: %v\n", id, err)
+				return
+			}
 		}
-		MimeType = http.DetectContentType(DetectBuff)
+		MimeType = http.DetectContentType(DetectBuff[:n])
 	}
 
-	//setting headers
-	{
+	{ //setting headers
 		w.Header().Add("Content-Length", strconv.Itoa(int(fileInfo.Size())))
 		w.Header().Add("Content-Type", MimeType)
 		w.Header().Set("Last-Modified", fileInfo.ModTime().UTC().Format(http.TimeFormat))
@@ -341,6 +356,10 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 				n           int
 			)
 			n, err = fmt.Sscanf(Range, "bytes=%d-%d", &offset, &higherBound)
+			if err != nil {
+				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+				return
+			}
 			if n < 2 {
 				higherBound = fileInfo.Size() - 1
 			}
@@ -383,10 +402,15 @@ func (m *mainHandler) ManageHEAD(w http.ResponseWriter, r *http.Request) {
 	m.ManageGET(w, r, false)
 }
 
-func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.URL)
-	fmt.Println(r.Header)
-	io.CopyN(os.Stdout, r.Body, r.ContentLength)
+func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TODO: plus tard.
+	w.WriteHeader(http.StatusNotImplemented)
+	//Le faire marcher
+	fmt.Println("about to have color")
+	fmt.Println(Colorize(fmt.Sprint(r.URL), ColorMagenta))
+	fmt.Println(Colorize(fmt.Sprintf("%s", RenderHeader(&r.Header)), ColorBlue))
+	fmt.Println("<body>")
+	io.Copy(os.Stdout, r.Body)
+	fmt.Println("</body>")
 	if mode != "fileserver" {
 		return
 	}
@@ -448,11 +472,16 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func render(base, folderPath string) ([]byte, error) {
-	out := ""
+func render(base, folderPath string) ([]byte, error) { //simple rendu d'un dossier
+	/*
+		<a href="/autre dossier ou fichier></a>"
+		...
+		...
+	*/
+	out := "" //on a besoin de base pour dire à quoi correspond le / (root)
 	folderstats, err := ioutil.ReadDir(base + folderPath)
 	if err != nil {
-		return []byte(out), err
+		return nil, err
 	}
 	out += fmt.Sprintf("<pre>\n")
 	for _, v := range folderstats {
@@ -541,7 +570,7 @@ func GetAddress() (addrs []net.IP) {
 
 }
 
-func Line(skip ...int) string {
+func Line(skip ...int) string { //tells line number
 	var s int
 	if len(skip) == 0 {
 		s = 1
@@ -617,14 +646,6 @@ func ReadSlice(r io.Reader, delim []byte) ([]byte, error) {
 		iDelim++
 	}
 	return out, nil
-}
-
-func Test() {
-	return
-	a := "marmelade"
-	b := bytes.NewReader([]byte(a))
-	o, err := ReadSlice(b, []byte("me"))
-	fmt.Println(string(o), err)
 }
 
 type FormFile struct {
@@ -770,7 +791,7 @@ func Flags() {
 			flag.StringVar(&port, "port", "8080", "defines the TCP port on which the web server is going to serve (must be a valid port number)") // le port (par défault c'est le 8080)
 
 			//working dir
-			flag.StringVar(&WorkingDir, "dir", "./", "defines the directory the server is goig to serve") //le scope du serveur(les fichiers qui seront servit)
+			flag.StringVar(&WorkingDir, "dir", defaultWorkingDir, "defines the directory the server is goig to serve") //le scope du serveur(les fichiers qui seront servit)
 			//	 par défault c'est le fichier duquel le programme a été commencé
 
 		}
@@ -789,7 +810,7 @@ func Flags() {
 		}
 	Apres:
 		{ //server specific
-			flag.BoolVar(&isKeepAliveEnabled, "A", false, "enables http keep-alives")
+			flag.BoolVar(&isKeepAliveEnabled, "A", true, "enables http keep-alives")
 			flag.DurationVar(&shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
 			flag.StringVar(&mode, "mode", "", "sets server mode")
 			{ // web ui flags
@@ -954,4 +975,13 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 		return ErrorUnauthorized
 	}
 	return nil
+}
+
+func RenderHeader(h *http.Header) string {
+	o := ""
+	for i, v := range *h {
+		o += fmt.Sprintf("%s: %v\n", i, v)
+	}
+	return o
+
 }
