@@ -217,6 +217,10 @@ func (m *mainHandler) NewRequest() int { //assigns a request number
 }
 func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBody bool) { //serves get requests
 
+	{ //setting default header
+		w.Header().Add("Accept-Ranges", "bytes")
+	}
+
 	var (
 		MimeType string
 		id       = m.NewRequest() // request id
@@ -227,12 +231,13 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			vPrintf(1, "failed auth from %v: %s\n", r.RemoteAddr, err.Error())
+			return
 		}
 
 	}
 
 	{ //logging
-		log := fmt.Sprintf("[%d] got %s request to %v from %v (%v)\n", id, r.Method, r.Host, r.RemoteAddr, r.RequestURI)
+		log := fmt.Sprintf("[%d] got %s request to %v from %v\n", id, r.Method, r.RequestURI, r.RemoteAddr)
 		finishedServing := fmt.Sprintf("finished serving [%d] at %v\n", id, r.RemoteAddr)
 		m.Log(log)
 		vPrintf(1, log)
@@ -247,7 +252,6 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	vPrintf(1, "[%d] asking for %v\n", id, r.URL.EscapedPath())
 
 	ComposedPath := WorkingDir + path.Clean(r.URL.Path)
-	fmt.Println(ComposedPath)
 	//vPrintf(0, "%s\n", ComposedPath)
 	if strings.Contains(r.RequestURI, "../") { // ../ permits a request to access files outside the server's scope
 		//w.Header().Add("Connection", "close")
@@ -256,12 +260,12 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	}
 	//.. Check done
 	// no ..
-
 	//check if requested content exists
 	File, err := os.Open(ComposedPath)
 	if err != nil { //the file simply doesn't exist or is inaccessible
 		vPrintf(1, "[%d] request failed: %v\n", id, err)
 		//too informative//http.Error(w, err.Error(), http.StatusNotFound)
+		fmt.Println(err)
 		if os.IsNotExist(err) {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -299,7 +303,8 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		case "web":
 			content, err = ioutil.ReadFile(ComposedPath + "/index.html")
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusNotFound)
+				SendStatusFail(w, http.StatusNotFound)
+				//http.Error(w, err.Error(), http.StatusNotFound)
 				vPrintf(2, "[%d] error reading index.html: %v\n", id, err)
 				return
 			}
@@ -344,7 +349,6 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		w.Header().Add("Content-Length", strconv.Itoa(int(fileInfo.Size())))
 		w.Header().Add("Content-Type", MimeType)
 		w.Header().Set("Last-Modified", fileInfo.ModTime().UTC().Format(http.TimeFormat))
-		w.Header().Add("Accept-Ranges", "bytes")
 	}
 
 	NumBytesToCopy := fileInfo.Size()
@@ -355,11 +359,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 				higherBound int64
 				n           int
 			)
-			n, err = fmt.Sscanf(Range, "bytes=%d-%d", &offset, &higherBound)
-			if err != nil {
-				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
-				return
-			}
+			n, _ = fmt.Sscanf(Range, "bytes=%d-%d", &offset, &higherBound)
 			if n < 2 {
 				higherBound = fileInfo.Size() - 1
 			}
@@ -581,7 +581,7 @@ func Line(skip ...int) string { //tells line number
 	_, file, a, _ := runtime.Caller(s)
 	split := strings.Split(file, "/")
 	file = split[len(split)-1]
-	return file + strconv.Itoa(a)
+	return file + " " + strconv.Itoa(a)
 }
 
 func use(x ...interface{}) {
@@ -595,7 +595,6 @@ type settingsHandler struct {
 func (s *settingsHandler) Log(x ...interface{}) {
 	o := "[webUI] "
 	o += fmt.Sprint(x...)
-	fmt.Println(o)
 }
 
 func (s *settingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -957,7 +956,7 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 
 	_, err = fmt.Sscanf(total, "%s %s", &authScheme, &s)
 	if err != nil {
-		fmt.Println(err)
+		dPrintln("error scanning auth token:", err)
 
 		return ErrorUnauthorized
 	}
@@ -984,4 +983,9 @@ func RenderHeader(h *http.Header) string {
 	}
 	return o
 
+}
+
+func SendStatusFail(w http.ResponseWriter, code int) {
+	w.WriteHeader(code)
+	fmt.Fprintln(w, code, http.StatusText(code))
 }
