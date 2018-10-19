@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -98,7 +99,9 @@ func main() {
 	if isWebUIEnabled {
 		go WebUi()
 	}
-	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
+
+	done :=
+		ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
 	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
 	iPrintf("serving %s on port %s\n", WorkingDir, port)
 	if err := server.ListenAndServe(); err != http.ErrServerClosed { //sert les requêtes http sur le listener et le stockage choisi
@@ -988,4 +991,81 @@ func RenderHeader(h *http.Header) string {
 func SendStatusFail(w http.ResponseWriter, code int) {
 	w.WriteHeader(code)
 	fmt.Fprintln(w, code, http.StatusText(code))
+}
+
+func ManageCli() chan int {
+	c := make(chan int)
+	go func() {
+		b := bufio.NewReader(os.Stdin)
+		for {
+			s, err := b.ReadString('\n')
+			if err != nil {
+				panic(err)
+			}
+			args := ParseCommandLine(s)
+			fmt.Println(args)
+		}
+	}()
+
+	return c
+}
+
+func ParseCommandLine(s string) []string {
+	var (
+		outputSlice = make([]string, 0)
+		currentWord []rune
+
+		doubleQuoted bool
+		quoted       bool
+		escaped      bool
+	)
+	currentWord = make([]rune, 0, 32)
+	for _, char := range s { //ranging through each char
+		//fmt.Printf("char: %c\n", char)
+		//fmt.Println(string(currentWord))
+		if escaped { // if char before was \ :
+			currentWord = append(currentWord, char)
+			escaped = false
+			continue
+		}
+		if char == '\\' {
+			escaped = true
+			continue
+		}
+		if char == '\'' {
+			quoted = !quoted
+			continue
+		}
+
+		if char == '"' {
+			doubleQuoted = !doubleQuoted
+			continue
+		}
+
+		if char == ' ' {
+			outputSlice = append(outputSlice, string(currentWord))
+			currentWord = make([]rune, 0, 32)
+			//fmt.Println(outputSlice)
+			continue
+		}
+		currentWord = append(currentWord, char)
+
+	}
+	if len(currentWord) > 0 {
+		outputSlice = append(outputSlice, string(currentWord))
+	}
+	outputSlice = StripBlankStrings(outputSlice)
+
+	return outputSlice
+}
+
+func StripBlankStrings(s []string) []string {
+	o := make([]string, len(s))
+	for i := range s {
+		if len(s[i]) == 0 {
+			continue
+		}
+		o = append(o, s[i])
+	}
+	return o
 }
