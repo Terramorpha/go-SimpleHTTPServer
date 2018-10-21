@@ -32,7 +32,7 @@ DONE
 - file uploading(ghetto backups)
     - make a proper system to read post requests
 
-- implement web ui (lol)
+- implement web configuration ui (lol)
 
 
 
@@ -42,5 +42,11 @@ DONE
 
 
 
-- simple command interpreter
+- simple command interpreter // pass besoin
 
+
+- config file //pas besoin
+
+
+- implement basic timeouts
+DONE

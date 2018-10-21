@@ -47,6 +47,10 @@ const (
 	defaultWorkingDir = "."
 )
 
+var (
+	MaxDuration time.Duration = (1 << 63) - 1
+)
+
 var ( //error constants
 	ErrorUnauthorized = errors.New("CheckAuth: client didn't provide correct authorization")
 )
@@ -65,6 +69,7 @@ var ( //where we put flag variables and global variables
 	isDebug            bool
 	mode               string
 	shutdowmTimeout    time.Duration
+	requestTimeout     time.Duration
 
 	isAuthEnabled bool
 	authPassword  string
@@ -86,7 +91,14 @@ func main() {
 		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", authUsername, authPassword)
 	}
 	han := new(mainHandler) //l'endroit où le serveur stockera ses variables tel que le nb de connections
-	server := &http.Server{Addr: ":" + port, Handler: han}
+	server := &http.Server{
+		Addr:              ":" + port,
+		Handler:           han,
+		ReadHeaderTimeout: requestTimeout,
+		ReadTimeout:       requestTimeout,
+		WriteTimeout:      requestTimeout,
+		IdleTimeout:       requestTimeout,
+	}
 	server.SetKeepAlivesEnabled(isKeepAliveEnabled)
 	addrs := GetAddress()
 	iPrintln("you can connect to this server on:")
@@ -268,7 +280,6 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	if err != nil { //the file simply doesn't exist or is inaccessible
 		vPrintf(1, "[%d] request failed: %v\n", id, err)
 		//too informative//http.Error(w, err.Error(), http.StatusNotFound)
-		fmt.Println(err)
 		if os.IsNotExist(err) {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -514,25 +525,6 @@ const form = `
 <button>Submit</button>
 </form>
 `
-
-func ParseDuration(s string) (time.Duration, error) {
-	var char rune
-	var num int
-	n, _ := fmt.Sscanf(s, "%d%c")
-	if n != 2 {
-		return 0, errors.New("invalid duration format")
-	}
-	switch char {
-	case 'h':
-		return time.Duration(num) * time.Hour, nil
-	case 'm':
-		return time.Duration(num) * time.Minute, nil
-	case 's':
-		return time.Duration(num) * time.Second, nil
-	default:
-		return 0, errors.New("invalid time unit")
-	}
-}
 
 //GetAddress is a simple way to get main ip address
 func GetAddress() (addrs []net.IP) {
@@ -811,9 +803,10 @@ func Flags() {
 
 		}
 	Apres:
-		{ //server specific
+		{ //server specific := time.Unix(1<<63-1, 0)
 			flag.BoolVar(&isKeepAliveEnabled, "A", true, "enables http keep-alives")
 			flag.DurationVar(&shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
+			flag.DurationVar(&requestTimeout, "request-timeout", MaxDuration, "the time the server will wait for the request")
 			flag.StringVar(&mode, "mode", "", "sets server mode")
 			{ // web ui flags
 				flag.BoolVar(&isWebUIEnabled, "webui", false, "enables web ui")
