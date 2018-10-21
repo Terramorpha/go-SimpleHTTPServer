@@ -33,6 +33,7 @@ install_android:
 	GOOS=linux GOARCH=arm64 go build -o web_android
 	adb push --sync web_android /sdcard/dev/web
 	adb shell "su -c 'mount -o remount,rw /system;cp -f /sdcard/dev/web /system/xbin/web;chmod +x /system/xbin/web;mount -o remount,ro /system;exit;'"
+	rm web_android
 
 
 

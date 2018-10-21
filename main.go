@@ -112,8 +112,7 @@ func main() {
 		go WebUi()
 	}
 
-	done :=
-		ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
+	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
 	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
 	iPrintf("serving %s on port %s\n", WorkingDir, port)
 	if err := server.ListenAndServe(); err != http.ErrServerClosed { //sert les requêtes http sur le listener et le stockage choisi
