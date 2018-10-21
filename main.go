@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net"
 	"net/http"
 	"os"
@@ -355,7 +356,11 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 				return
 			}
 		}
-		MimeType = http.DetectContentType(DetectBuff[:n])
+		MimeType = mime.TypeByExtension("." + Extension(File.Name()))
+		//fmt.Printf("(%s) mime: %s", File.Name(), MimeType)
+		if MimeType == "" {
+			MimeType = http.DetectContentType(DetectBuff[:n])
+		}
 	}
 
 	{ //setting headers
@@ -1060,4 +1065,9 @@ func StripBlankStrings(s []string) []string {
 		o = append(o, s[i])
 	}
 	return o
+}
+
+func Extension(s string) string {
+	a := strings.Split(s, ".")
+	return a[len(a)-1]
 }
