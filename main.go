@@ -26,7 +26,9 @@ import (
 )
 
 const ( //terminal colors
-	ColorReset      = 0
+	//ColorReset resets all colors/properties in terminal escape sequences
+	ColorReset = 0
+	//ColorBold makes text bold
 	ColorBold       = 1
 	ColorDim        = 2
 	ColorUnderlined = 4
@@ -44,21 +46,26 @@ const ( //terminal colors
 	ColorGrey    = 7
 )
 
+var (
+	gitCommit = ""
+)
+
 const (
 	defaultWorkingDir = "."
 )
 
 var (
+	//MaxDuration is the maximum duration time.Duration can take
 	MaxDuration time.Duration = (1 << 63) - 1
 )
 
 var ( //error constants
+	//ErrorUnauthorized is the error reporting an authentification error
 	ErrorUnauthorized = errors.New("CheckAuth: client didn't provide correct authorization")
 )
 
 var ( //where we put flag variables and global variables
-	//User contains all information about the user running the program (currently only used to check if program is run as root)
-	User    *user.User
+	runUser *user.User
 	port    string
 	portNum int
 	//WorkingDir represent the root of the server
@@ -78,7 +85,7 @@ var ( //where we put flag variables and global variables
 
 	isWebUIEnabled bool
 	webUIPort      int
-
+	isGitCommit    bool
 	isColorEnabled bool
 )
 
@@ -189,11 +196,14 @@ type mainHandler struct {
 	logBuffer string
 }
 
+//Log
+//implements a basic logging system. not fully useful yet.
 func (m *mainHandler) Log(x ...interface{}) {
 	m.logBuffer += fmt.Sprintf("[%s] %s\n", time.Now().UTC().Format(http.TimeFormat), fmt.Sprint(x...))
 
 }
 
+//ServeHTTP separes different types of request.
 func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	switch r.Method {
@@ -212,6 +222,11 @@ func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//ManageCONNECT is not implemented yet.
+//
+//it is supposed (when it will be implemented)
+//to give the functionnality
+//of an HTTP proxy
 func (m *mainHandler) ManageCONNECT(w http.ResponseWriter, r *http.Request) { //currently shit
 	return
 	dPrintf("%#+v\n", r.URL)
@@ -225,11 +240,20 @@ func (m *mainHandler) ManageCONNECT(w http.ResponseWriter, r *http.Request) { //
 	io.Copy(w, conn)
 }
 
+//NewRequest increments the request counter. used for debugging and parsing logs.
+//
+//maybe.
 func (m *mainHandler) NewRequest() int { //assigns a request number
 	a := m.Requests
 	m.Requests++
 	return a
 }
+
+//ManageGET manages get requests.
+//
+//yeah.
+//
+//that's it
 func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBody bool) { //serves get requests
 
 	{ //setting default header
@@ -416,18 +440,23 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	}
 }
 
+//ManageHEAD responds to Head requests by telling ManageGet to not actually write content
 func (m *mainHandler) ManageHEAD(w http.ResponseWriter, r *http.Request) {
 	m.ManageGET(w, r, false)
 }
 
+//ManagePOST manages post forms (currently only used in fs mode)
 func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TODO: plus tard.
+
 	w.WriteHeader(http.StatusNotImplemented)
+
 	//Le faire marcher
-	fmt.Println("about to have color")
-	fmt.Println(Colorize(fmt.Sprint(r.URL), ColorMagenta))
-	fmt.Println(Colorize(fmt.Sprintf("%s", RenderHeader(&r.Header)), ColorBlue))
-	fmt.Println("<body>")
+	//fmt.Println("about to have color")
+	//fmt.Println(Colorize(fmt.Sprint(r.URL), ColorMagenta))
+	//fmt.Println(Colorize(fmt.Sprintf("%s", RenderHeader(&r.Header)), ColorBlue))
+	//fmt.Println("<body>")
 	io.Copy(os.Stdout, r.Body)
+	return
 	fmt.Println("</body>")
 	if mode != "fileserver" {
 		return
@@ -510,6 +539,7 @@ func render(base, folderPath string) ([]byte, error) { //simple rendu d'un dossi
 	return []byte(out), nil
 }
 
+//BasicHTMLFile is a template for a very simple html webpage
 func BasicHTMLFile() string {
 	return `<!DOCTYPE html>
 <html>
@@ -518,14 +548,14 @@ func BasicHTMLFile() string {
 </html>`
 }
 
+//BasicFileServerHeader returns a template for posting forms in the fs mode
 func BasicFileServerHeader() string {
 	return form
 }
 
 const form = `
 <form method="post" enctype="multipart/form-data">
-<input type="file" id="file" multiple/>
-<input id="fileName" placeholder="name of file to upload"/>
+<input type="file" id="fileid" name="filename"/>
 <button>Submit</button>
 </form>
 `
@@ -784,6 +814,9 @@ func WebUi() {
 
 func Flags() {
 	{ //flag declaring and parsing
+		{ //on demande le help, commit ou version
+			flag.BoolVar(&isGitCommit, "commit", false, "prints the git commit the code was compiled on")
+		}
 		{ //standard
 			//port number
 			flag.StringVar(&port, "port", "8080", "defines the TCP port on which the web server is going to serve (must be a valid port number)") // le port (par défault c'est le 8080)
@@ -831,7 +864,10 @@ func Flags() {
 		}
 
 		flag.Parse() //on interprète
-
+		if isGitCommit {
+			fmt.Println(gitCommit)
+			os.Exit(0)
+		}
 	}
 }
 

@@ -50,3 +50,5 @@ DONE
 
 - implement basic timeouts
 DONE
+
+- make a better makefile
