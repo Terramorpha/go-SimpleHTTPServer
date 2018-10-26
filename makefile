@@ -1,6 +1,6 @@
 commit := $(shell git rev-parse HEAD)
 outfile := bin/web
-BUILD := "go build -ldflags '-X main.gitCommit=$(commit)'"
+BUILD := go build -ldflags '-X main.gitCommit=$(commit)'
 
 
 all: install
@@ -35,7 +35,7 @@ runtest_fs: build
 
 
 install_android:
-	GOOS=linux GOARCH=arm64 go build -o web_android
+	GOOS=linux GOARCH=arm64 $(BUILD) -o web_android
 	adb push --sync web_android /sdcard/dev/web
 	adb shell "su -c 'mount -o remount,rw /system;cp -f /sdcard/dev/web /system/xbin/web;chmod +x /system/xbin/web;mount -o remount,ro /system;exit;'"
 	rm web_android
