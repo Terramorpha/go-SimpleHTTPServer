@@ -9,13 +9,6 @@ DONE
 - implement more technical flags (shutdown timeout, force protocol, etc.)
 DONE
 
-
-
-
-- implement log log
-
-
-
 - implement basic authenticating
 DONE
 
@@ -39,7 +32,7 @@ DONE
 
 
 - Refactor <<<<<-
-    DONE
+DONE
 
 
 

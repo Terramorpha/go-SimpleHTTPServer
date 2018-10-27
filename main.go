@@ -21,8 +21,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 const ( //terminal colors
@@ -69,7 +67,10 @@ var ( //where we put flag variables and global variables
 	port    string
 	portNum int
 	//WorkingDir represent the root of the server
-	WorkingDir      = "./"
+	WorkingDir   string
+	pathCertFile string
+	pathKeyFile  string
+
 	verbosityLevel  int
 	mode            string
 	shutdowmTimeout time.Duration
@@ -117,15 +118,20 @@ func main() {
 	if isTLS { //l'encryption n'est pas implémentée, don si elle activée, crash
 		Fatal(errors.New("tls not yet implemented"))
 	}
-	if isWebUIEnabled {
-		go WebUi()
-	}
-
 	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
 	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
 	iPrintf("serving %s on port %s\n", WorkingDir, port)
-	if err := server.ListenAndServe(); err != http.ErrServerClosed { //sert les requêtes http sur le listener et le stockage choisi
-		Fatal(err)
+	if isTLS {
+		//not yet implemented
+		err := server.ListenAndServeTLS(PathCertFile, PathKeyFile)
+		if err != http.ErrServerClosed {
+			Fatal(err)
+		}
+	} else {
+		err := server.ListenAndServe()
+		if err != http.ErrServerClosed { //sert les requêtes http sur le listener et le stockage choisi
+			Fatal(err)
+		}
 	}
 	<-done
 }
@@ -617,39 +623,6 @@ func Line(skip ...int) string { //tells line number
 func use(x ...interface{}) {
 
 }
-
-type settingsHandler struct {
-	wsUpgrader websocket.Upgrader
-}
-
-func (s *settingsHandler) Log(x ...interface{}) {
-	o := "[webUI] "
-	o += fmt.Sprint(x...)
-}
-
-func (s *settingsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		s.Log("got GET request")
-	}
-	if strings.HasPrefix(r.RequestURI, "/ws/") { //websockets
-		conn, err := s.wsUpgrader.Upgrade(w, r, nil)
-		if err != nil {
-			s.Log(err)
-		}
-		go s.ManageWebsocket(conn)
-
-	}
-}
-
-type SettingsUpdate struct {
-	Type    string
-	Content map[string]string
-}
-
-func (s *settingsHandler) ManageWebsocket(c *websocket.Conn) {
-
-}
-
 func ReadSlice(r io.Reader, delim []byte) ([]byte, error) {
 	var (
 		iDelim    int
@@ -790,27 +763,6 @@ func ManageServer(server *http.Server) chan int {
 		ret <- 0
 	}(done)
 	return done
-}
-
-func WebUi() {
-	var (
-		err error
-	)
-
-	han := new(settingsHandler)
-	han.wsUpgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-
-	listener, err := net.Listen("tcp", ":"+strconv.Itoa(webUIPort))
-	if err != nil {
-		panic(err)
-	}
-	err = http.Serve(listener, han)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func Flags() {
