@@ -28,6 +28,8 @@ DONE
 
 
 - implement "tell time" flag
+DONE
+
 
 - file uploading(ghetto backups)
     - make a proper system to read post requests

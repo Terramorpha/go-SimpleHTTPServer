@@ -69,24 +69,25 @@ var ( //where we put flag variables and global variables
 	port    string
 	portNum int
 	//WorkingDir represent the root of the server
-	WorkingDir         = "./"
-	isVerbose          = false
+	WorkingDir      = "./"
+	verbosityLevel  int
+	mode            string
+	shutdowmTimeout time.Duration
+	requestTimeout  time.Duration
+
+	authPassword string
+	authUsername string
+	webUIPort    int
+
+	isVerbose          bool
 	isTLS              bool
-	verbosityLevel     int
 	isKeepAliveEnabled bool
 	isDebug            bool
-	mode               string
-	shutdowmTimeout    time.Duration
-	requestTimeout     time.Duration
-
-	isAuthEnabled bool
-	authPassword  string
-	authUsername  string
-
-	isWebUIEnabled bool
-	webUIPort      int
-	isGitCommit    bool
-	isColorEnabled bool
+	isAuthEnabled      bool
+	isTellTime         bool
+	isWebUIEnabled     bool
+	isGitCommit        bool
+	isColorEnabled     bool
 )
 
 func main() {
@@ -832,6 +833,8 @@ func Flags() {
 			flag.IntVar(&verbosityLevel, "V", 0, "sets the degree of verbosity of the program") //le niveau d'information plus ou moins utiles que l'on dit
 
 			flag.BoolVar(&isDebug, "D", false, "used to show internal values usefule for debuging")
+
+			flag.BoolVar(&isTellTime, "telltime", false, "each log entry will tell the time it was printed")
 		}
 
 		goto Apres
@@ -871,6 +874,12 @@ func Flags() {
 	}
 }
 
+func Fprint(w io.Writer, x ...interface{}) (int, error) {
+	if isTellTime {
+		return fmt.Fprint(w, time.Now().Format("Jan 2 15:04:05 MST 2006"), fmt.Sprint(x...))
+	}
+	return fmt.Fprint(w, x...)
+}
 func TextColor(colorCode int) string {
 	return fmt.Sprintf("\033[3%dm", colorCode)
 }
@@ -889,7 +898,7 @@ func Fatal(x interface{}) {
 }
 
 func iPrint(a ...interface{}) (int, error) {
-	return fmt.Fprintf(os.Stderr, "%s %s", Colorize("[INFOS]", ColorGreen), fmt.Sprint(a...))
+	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[INFOS]", ColorGreen), fmt.Sprint(a...)))
 }
 
 func iPrintln(a ...interface{}) (int, error) {
@@ -901,7 +910,7 @@ func iPrintf(format string, a ...interface{}) (int, error) {
 }
 
 func ePrint(a ...interface{}) (int, error) {
-	return fmt.Printf("%s %s", Colorize("[ERROR]", ColorRed), fmt.Sprint(a...))
+	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[ERROR]", ColorRed), fmt.Sprint(a...)))
 }
 
 func ePrintln(a ...interface{}) (int, error) {
@@ -913,7 +922,7 @@ func ePrintf(format string, a ...interface{}) (int, error) {
 }
 
 func wPrint(a ...interface{}) (int, error) {
-	return fmt.Printf("%s %s", Colorize("[WARN ]", ColorYellow), fmt.Sprint(a...))
+	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[WARN ]", ColorYellow), fmt.Sprint(a...)))
 }
 
 func wPrintln(a ...interface{}) (int, error) {
@@ -929,7 +938,7 @@ func vPrint(verbosityTreshold int, x ...interface{}) (int, error) {
 		return 0, nil
 	}
 
-	return fmt.Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[VERBO]", ColorGrey), fmt.Sprint(x...)))
+	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[VERBO]", ColorGrey), fmt.Sprint(x...)))
 
 }
 
@@ -961,7 +970,7 @@ func dPrint(x ...interface{}) (int, error) {
 	if !isDebug {
 		return 0, nil
 	}
-	return fmt.Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[DEBUG]", ColorCyan), fmt.Sprint(x...)))
+	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[DEBUG]", ColorCyan), fmt.Sprint(x...)))
 }
 
 func dPrintf(format string, x ...interface{}) (int, error) {
