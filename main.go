@@ -68,8 +68,8 @@ var ( //where we put flag variables and global variables
 	portNum int
 	//WorkingDir represent the root of the server
 	WorkingDir   string
-	pathCertFile string
-	pathKeyFile  string
+	PathCertFile string
+	PathKeyFile  string
 
 	verbosityLevel  int
 	mode            string
@@ -145,21 +145,27 @@ func init() { //preparing server and checking
 		}
 	}
 	//dPrintln(User)
-
-	{ //port permission  && validity checking
-
-		portnum, err := net.LookupPort("tcp", port)
-		if err != nil {
-
-			Fatal("error invalid port number: " + err.Error())
-		}
-		portNum = portnum
-		if portNum < 1024 {
-			wPrintf("need root to bind on port %d\n", portNum)
+	{ //checking TLS settings
+		if isTLS {
+			if PathCertFile == "" {
+				Fatal("path of certificate file must be given for TLS to work (-certfile)")
+			}
+			if PathKeyFile == "" {
+				Fatal("path of key file must be given for TLS to work (-keyfile)")
+			}
+			certfile, err := os.OpenFile(PathCertFile, os.O_RDONLY, 0400)
+			if err != nil {
+				Fatal(fmt.Sprintf("certfile %s cant be accessed, TLS can't work", PathCertFile))
+			}
+			certfile.Close()
+			keyfile, err := os.OpenFile(PathKeyFile, os.O_RDONLY, 0400)
+			if err != nil {
+				Fatal(fmt.Sprintf("keyfile %s cant be accessed, TLS can't work", PathKeyFile))
+			}
+			keyfile.Close()
 		}
 
 	}
-
 	{ //checking working directory exists (or else nothing will get done)
 		file, err := os.Open(WorkingDir)
 		defer file.Close()
@@ -184,7 +190,21 @@ func init() { //preparing server and checking
 		}
 
 	}
-	{
+	{ //port permission  && validity checking
+
+		portnum, err := net.LookupPort("tcp", port)
+		if err != nil {
+
+			Fatal("error invalid port number: " + err.Error())
+		}
+		portNum = portnum
+		if portNum < 1024 {
+			wPrintf("need root to bind on port %d\n", portNum)
+		}
+
+	}
+
+	{ //setting correct verbosity levels
 
 		if verbosityLevel > 0 { //au cas ou l'utilisateur a pensé à metre le niveau de verbosité mais pas d'activer la verbosité
 			isVerbose = true //on l'active
@@ -788,13 +808,11 @@ func Flags() {
 
 			flag.BoolVar(&isTellTime, "telltime", false, "each log entry will tell the time it was printed")
 		}
-
-		goto Apres
-		{ //patentes qui marchent pas
+		{ //HTTPS
 			flag.BoolVar(&isTLS, "tls", false, "enables tls encryption (not yet implemented)") //si on utilise une encryption
-
+			flag.StringVar(&PathCertFile, "certfile", "", "the location of the TLS certificate file")
+			flag.StringVar(&PathKeyFile, "keyfile", "", "the location of the TLS key file")
 		}
-	Apres:
 		{ //server specific := time.Unix(1<<63-1, 0)
 			flag.BoolVar(&isKeepAliveEnabled, "A", true, "enables http keep-alives")
 			flag.DurationVar(&shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
@@ -846,7 +864,8 @@ func TextReset() string {
 
 func Fatal(x interface{}) {
 	ePrintln(x)
-	panic(x)
+	os.Exit(1)
+	//panic(x)not pretty to the user lol
 }
 
 func iPrint(a ...interface{}) (int, error) {
