@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"os/user"
 	"path"
 	"runtime"
 	"strconv"
@@ -52,7 +51,7 @@ const (
 	defaultWorkingDir = "."
 )
 
-var (
+const (
 	//MaxDuration is the maximum duration time.Duration can take
 	MaxDuration time.Duration = (1 << 63) - 1
 )
@@ -63,13 +62,15 @@ var ( //error constants
 )
 
 var ( //where we put flag variables and global variables
-	runUser *user.User
+
 	port    string
 	portNum int
-	//WorkingDir represent the root of the server
-	WorkingDir   string
+	//WorkingDir is the root of the server
+	WorkingDir string
+	//PathCertFile is the file from which http.ListenAndServeTLS will get its certificates
 	PathCertFile string
-	PathKeyFile  string
+	//PathKeyFile is the file from which http.ListenAndServeTLS will get its encryption keys
+	PathKeyFile string
 
 	verbosityLevel  int
 	mode            string
@@ -78,7 +79,7 @@ var ( //where we put flag variables and global variables
 
 	authPassword string
 	authUsername string
-	webUIPort    int
+	webUIport    int
 
 	isVerbose          bool
 	isTLS              bool
@@ -145,6 +146,17 @@ func init() { //preparing server and checking
 		}
 	}
 	//dPrintln(User)
+
+	{ //checking mode string
+		if mode != "" {
+			switch mode {
+			case "web":
+			case "fileserver":
+			default:
+				Fatal("invalid mode. only these are valid:\n" + fmt.Sprint("web", "fileserver"))
+			}
+		}
+	}
 	{ //checking TLS settings
 		if isTLS {
 			if PathCertFile == "" {
@@ -820,7 +832,7 @@ func Flags() {
 			flag.StringVar(&mode, "mode", "", "sets server mode")
 			{ // web ui flags
 				flag.BoolVar(&isWebUIEnabled, "webui", false, "enables web ui")
-				flag.IntVar(&webUIPort, "uiPort", 8080, "specifies web ui port")
+				flag.IntVar(&webUIport, "uiport", 8080, "specifies web ui port")
 			}
 		}
 

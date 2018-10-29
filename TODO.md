@@ -36,6 +36,8 @@ DONE
 
 
 
+- comment ENTIRE code
+
 
 - simple command interpreter // pass besoin
 
@@ -47,3 +49,6 @@ DONE
 DONE
 
 - make a better makefile
+
+
+- better implementation of modes
