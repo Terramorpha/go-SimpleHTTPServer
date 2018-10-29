@@ -87,7 +87,7 @@ var ( //where we put flag variables and global variables
 	isDebug            bool
 	isAuthEnabled      bool
 	isTellTime         bool
-	isWebUIEnabled     bool
+	isWebUI            bool
 	isGitCommit        bool
 	isColorEnabled     bool
 )
@@ -828,7 +828,7 @@ func Flags() {
 			flag.DurationVar(&requestTimeout, "request-timeout", MaxDuration, "the time the server will wait for the request")
 			flag.StringVar(&mode, "mode", "", "sets server mode")
 			{ // web ui flags
-				flag.BoolVar(&isWebUIEnabled, "webui", false, "enables web ui")
+				flag.BoolVar(&isWebUI, "webui", false, "enables web ui")
 				flag.IntVar(&webUIport, "uiport", 8080, "specifies web ui port")
 			}
 		}
