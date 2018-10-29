@@ -52,3 +52,8 @@ DONE
 
 
 - better implementation of modes
+
+
+
+WebUI
+- implémenter de meilleures structures de settings

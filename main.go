@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime"
 	"net"
 	"net/http"
@@ -1095,4 +1096,83 @@ func StripBlankStrings(s []string) []string {
 func Extension(s string) string {
 	a := strings.Split(s, ".")
 	return a[len(a)-1]
+}
+
+func WebUI() {
+	var (
+		err error
+	)
+	var (
+		listeningPort string
+		logContent    = make([]byte, 8192)
+		logWriter     = bytes.NewBuffer(logContent)
+		logger        = log.New(logWriter, "", 0)
+	)
+
+	handler := new(WebUISettings)
+
+	serv := http.Server{
+		Addr:              "localhost:" + listeningPort,
+		Handler:           handler,
+		TLSConfig:         nil,
+		ReadTimeout:       requestTimeout,
+		ReadHeaderTimeout: requestTimeout,
+		WriteTimeout:      requestTimeout,
+		IdleTimeout:       requestTimeout,
+		ErrorLog:          logger,
+	}
+	go func() {
+		err = serv.ListenAndServe()
+		Fatal(err)
+		//if err != http.ErrServerClosed {
+		//}
+
+	}()
+}
+
+type WebUISettings struct {
+
+	//WorkingDir is the root of the server
+	WorkingDir string
+	//PathCertFile is the file from which http.ListenAndServeTLS will get its certificates
+	PathCertFile string
+	//PathKeyFile is the file from which http.ListenAndServeTLS will get its encryption keys
+	PathKeyFile        string
+	mode               string
+	shutdowmTimeout    time.Duration
+	requestTimeout     time.Duration
+	authPassword       string
+	authUsername       string
+	isTLS              bool
+	isKeepAliveEnabled bool
+	isAuthEnabled      bool
+}
+
+/*
+comment la page de settings va fonctionner:
+
+
+(frontend)
+
+	à gauche            à droite
+	tt les settings     les erreurs de values
+
+
+
+
+
+
+	[CONFIRM]
+
+
+(backend)
+
+	client            serveur
+	------changements------->
+	<-----erreurs/ok---------
+*/
+
+func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	page := BasicHTMLFile()
+	use(page)
 }
