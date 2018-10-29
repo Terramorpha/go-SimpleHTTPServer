@@ -52,6 +52,23 @@ const (
 	defaultWorkingDir = "."
 )
 
+var (
+	StringValueBool = []string{
+		"true",
+		"false",
+		"True",
+		"False",
+		"TRUE",
+		"FALSE",
+		"1",
+		"0",
+		"on",
+		"off",
+		"ON",
+		"OFF",
+	}
+)
+
 const (
 	//MaxDuration is the maximum duration time.Duration can take
 	MaxDuration time.Duration = (1 << 63) - 1
@@ -1146,6 +1163,8 @@ type WebUISettings struct {
 	isTLS              bool
 	isKeepAliveEnabled bool
 	isAuthEnabled      bool
+
+	Settings []*Setting
 }
 
 /*
@@ -1171,9 +1190,82 @@ comment la page de settings va fonctionner:
 	client            serveur
 	------changements------->
 	<-----erreurs/ok---------
+
+	pour savoir si une valeur est valide, on utilise des types:
+	types:
+	- ipport
+		(ip/hostname):(port number)
+	- dir (selected by ui)
+
+	- bool
+		(true/false)
+	- duration
+		(chiffre)(m/s/h/µs/ms)
+
 */
 
 func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	page := BasicHTMLFile()
+
 	use(page)
+}
+
+func RenderSettings(st []Setting) []byte {
+
+}
+
+type Setting struct {
+	Name  string
+	Type  string
+	Value string
+}
+
+func CheckSettingValid(x *Setting) (*Setting, error) {
+	switch x.Type {
+	case SettingTypeBool:
+		if StringInArray(x.Value, StringValueBool) {
+			return x, nil
+		}
+		return nil, errors.New("invalid boolean value. Valid booleans are:\n" + strings.Join(StringValueBool, " ,"))
+	case SettingTypeDuration:
+		_, err := time.ParseDuration(x.Value)
+		if err != nil {
+			return nil, err
+		}
+		return x, nil
+	case SettingTypeFile:
+		//TODO
+	case SettingTypeIpPort:
+		_, _, err := net.SplitHostPort(x.Value)
+		if err != nil {
+			return nil, err
+		}
+		return x, err
+	case SettingTypePort:
+		_, err := net.LookupPort("tcp", x.Value)
+		if err != nil {
+			return nil, err
+		}
+		return x, nil
+	default:
+		return nil, nil
+	}
+	return nil, nil
+}
+
+const (
+	SettingTypeIpPort   = "ipport"
+	SettingTypePort     = "port"
+	SettingTypeFile     = "file"
+	SettingTypeBool     = "bool"
+	SettingTypeDuration = "duration"
+)
+
+func StringInArray(x string, y []string) bool {
+	for i := range y {
+		if x == y[i] {
+			return true
+		}
+	}
+	return false
 }
