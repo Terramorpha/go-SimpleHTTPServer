@@ -1165,6 +1165,7 @@ comment la page de settings va fonctionner:
 	[CONFIRM]
 
 
+
 (backend)
 
 	client            serveur
