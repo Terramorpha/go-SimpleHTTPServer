@@ -117,7 +117,7 @@ func main() {
 		fmt.Printf("        "+"http://%s/\n", net.JoinHostPort(v.String(), strconv.Itoa(portNum)))
 	}
 	if isTLS { //l'encryption n'est pas implémentée, don si elle activée, crash
-	//	Fatal(errors.New("tls not yet implemented"))
+		//	Fatal(errors.New("tls not yet implemented"))
 	}
 	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
 	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
@@ -234,7 +234,6 @@ type mainHandler struct {
 	Succeeded int
 	logBuffer string
 }
-
 
 //Log
 //implements a basic logging system. not fully useful yet.
@@ -830,7 +829,7 @@ func Flags() {
 			flag.BoolVar(&isKeepAliveEnabled, "A", true, "enables http keep-alives")
 			flag.DurationVar(&shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
 			flag.DurationVar(&requestTimeout, "request-timeout", MaxDuration, "the time the server will wait for the request")
-				flag.StringVar(&mode, "mode", "", "sets server mode")
+			flag.StringVar(&mode, "mode", "", "sets server mode")
 			{ // web ui flags
 				flag.BoolVar(&isWebUIEnabled, "webui", false, "enables web ui")
 				flag.IntVar(&webUIport, "uiport", 8080, "specifies web ui port")
