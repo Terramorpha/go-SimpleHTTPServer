@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -99,16 +100,76 @@ var ( //where we put flag variables and global variables
 	authUsername string
 	webUIport    int
 
-	isVerbose          bool
-	isTLS              bool
-	isKeepAliveEnabled bool
-	isDebug            bool
-	isAuthEnabled      bool
-	isTellTime         bool
-	isWebUI            bool
-	isGitCommit        bool
-	isColorEnabled     bool
+	isVerbose   bool
+	isTLS       bool
+	isKeepAlive bool
+	isDebug     bool
+	isAuth      bool
+	isTellTime  bool
+	isWebUI     bool
+	isGitCommit bool
+	isColored   bool
 )
+
+var webUI = WebUISettings{
+	Settings: []*Setting{
+		&Setting{
+			Name:  "WorkingDir",
+			Type:  "file",
+			Value: ".",
+		},
+		&Setting{
+			Name:  "PathCertFile",
+			Type:  "file",
+			Value: "",
+		},
+		&Setting{
+			Name:  "PathKeyFile",
+			Type:  "file",
+			Value: "",
+		},
+		&Setting{
+			Name:  "Mode",
+			Type:  "string",
+			Value: "",
+		},
+		&Setting{
+			Name:  "ShutdownTimeout",
+			Type:  "duration",
+			Value: "10s",
+		},
+		&Setting{
+			Name:  "RequestTimeout",
+			Type:  "duration",
+			Value: "10s",
+		},
+		&Setting{
+			Name:  "AuthPassword",
+			Type:  "string",
+			Value: "",
+		},
+		&Setting{
+			Name:  "AuthUsername",
+			Type:  "string",
+			Value: "",
+		},
+		&Setting{
+			Name:  "IsTLS",
+			Type:  "bool",
+			Value: "false",
+		},
+		&Setting{
+			Name:  "IsKeepAlive",
+			Type:  "bool",
+			Value: "true",
+		},
+		&Setting{
+			Name:  "IsAuth",
+			Type:  "bool",
+			Value: "false",
+		},
+	},
+}
 
 func main() {
 	if isVerbose {
@@ -116,7 +177,7 @@ func main() {
 		iPrintf("mode: %s\n", mode)
 	}
 
-	if isAuthEnabled {
+	if isAuth {
 		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", authUsername, authPassword)
 	}
 	han := new(mainHandler) //l'endroit où le serveur stockera ses variables tel que le nb de connections
@@ -128,7 +189,7 @@ func main() {
 		WriteTimeout:      requestTimeout,
 		IdleTimeout:       requestTimeout,
 	}
-	server.SetKeepAlivesEnabled(isKeepAliveEnabled)
+	server.SetKeepAlivesEnabled(isKeepAlive)
 	addrs := GetAddress()
 	iPrintln("you can connect to this server on:")
 	for _, v := range addrs {
@@ -157,7 +218,7 @@ func init() { //preparing server and checking
 
 	{ //setting auth if pass or user is set
 		if authUsername != "" || authPassword != "" {
-			isAuthEnabled = true
+			isAuth = true
 		}
 	}
 	//dPrintln(User)
@@ -319,7 +380,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		id       = m.NewRequest() // request id
 	)
 
-	if isAuthEnabled { //basic auth
+	if isAuth { //basic auth
 		err := CheckAuth(w, r)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -391,7 +452,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 				vPrintf(1, "[%d] error rendering directory: %v\n", id, err)
 				return
 			}
-			content = []byte(fmt.Sprintf(BasicHTMLFile(), "", string(content)))
+			content = []byte(BasicHTMLFile("", string(content), ""))
 		case "web":
 			content, err = ioutil.ReadFile(ComposedPath + "/index.html")
 			if err != nil {
@@ -407,7 +468,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 				vPrintf(2, "[%d] error reading index.html: %v\n", id, err)
 				return
 			}
-			content = []byte(fmt.Sprintf(BasicHTMLFile(), "", BasicFileServerHeader()+string(renderedFolder)))
+			content = []byte(fmt.Sprintf(BasicHTMLFile("", BasicFileServerHeader()+string(renderedFolder), "")))
 		}
 		size := len(content)
 		w.Header().Add("Content-Length", strconv.Itoa(size))
@@ -594,12 +655,13 @@ func render(base, folderPath string) ([]byte, error) { //simple rendu d'un dossi
 }
 
 //BasicHTMLFile is a template for a very simple html webpage
-func BasicHTMLFile() string {
-	return `<!DOCTYPE html>
+func BasicHTMLFile(head, body, script string) string {
+	return fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>%s</head>
 <body>%s</body>
-</html>`
+%s
+</html>`, head, body, script)
 }
 
 //BasicFileServerHeader returns a template for posting forms in the fs mode
@@ -841,7 +903,7 @@ func Flags() {
 			flag.StringVar(&PathKeyFile, "keyfile", "", "the location of the TLS key file")
 		}
 		{ //server specific := time.Unix(1<<63-1, 0)
-			flag.BoolVar(&isKeepAliveEnabled, "A", true, "enables http keep-alives")
+			flag.BoolVar(&isKeepAlive, "A", true, "enables http keep-alives")
 			flag.DurationVar(&shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
 			flag.DurationVar(&requestTimeout, "request-timeout", MaxDuration, "the time the server will wait for the request")
 			flag.StringVar(&mode, "mode", "", "sets server mode")
@@ -851,10 +913,10 @@ func Flags() {
 			}
 		}
 
-		flag.BoolVar(&isColorEnabled, "color", true, "enables or disables color in terminal log")
+		flag.BoolVar(&isColored, "color", true, "enables or disables color in terminal log")
 
 		{ //auth flags
-			flag.BoolVar(&isAuthEnabled, "auth", false, "enable password access")
+			flag.BoolVar(&isAuth, "auth", false, "enable password access")
 			flag.StringVar(&authPassword, "p", "", "sets the required password when authentification is enabled")
 			flag.StringVar(&authUsername, "u", "", "sets the required password when authentification is enabled")
 		}
@@ -950,7 +1012,7 @@ func vPrintln(t int, a ...interface{}) (int, error) {
 }
 
 func Colorize(x string, code int) string {
-	if isColorEnabled {
+	if isColored {
 		return TextColor(code) + x + TextReset()
 	}
 	return x
@@ -1205,13 +1267,13 @@ comment la page de settings va fonctionner:
 */
 
 func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	page := BasicHTMLFile()
+	if r.URL.Path == "/settings.json" {
+		enc := json.NewEncoder(w)
+		enc.Encode(s.Settings)
+	}
+	page := BasicHTMLFile("", "", "")
 
 	use(page)
-}
-
-func RenderSettings(st []Setting) []byte {
-
 }
 
 type Setting struct {
@@ -1259,7 +1321,10 @@ const (
 	SettingTypeFile     = "file"
 	SettingTypeBool     = "bool"
 	SettingTypeDuration = "duration"
+	SettingTypeString   = "string"
 )
+
+const SettingsJS = ``
 
 func StringInArray(x string, y []string) bool {
 	for i := range y {
@@ -1268,4 +1333,12 @@ func StringInArray(x string, y []string) bool {
 		}
 	}
 	return false
+}
+
+func Get(set *[]*Setting, x string) *Setting {
+	for i := range *set {
+		if (*set)[i].Name == x {
+			return (*set)[i]
+		}
+	}
 }
