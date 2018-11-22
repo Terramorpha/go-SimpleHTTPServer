@@ -8,6 +8,24 @@ import (
 	"os/signal"
 )
 
+func (c *Config) Get(x string) *Setting {
+	for i := range *c {
+		if (*c)[i].Name == x {
+			return (*c)[i]
+		}
+	}
+	return nil
+}
+
+func (c *Config) Set(x string, value string) *Setting {
+	for i := range *c {
+		if (*c)[i].Name == x {
+			(*c)[i].Value = value
+		}
+	}
+	panic(fmt.Sprintf("Config.Set: %s doesn't exist in array", x))
+}
+
 func WaitXInterrupt(x int, c chan os.Signal) chan struct{} {
 	ret := make(chan struct{})
 	go func() {
@@ -53,3 +71,5 @@ func ManageServer(server *http.Server) chan int {
 	}(done)
 	return done
 }
+
+type Config []*Option

@@ -19,4 +19,15 @@ const (
 var ( //error constants
 	//ErrorUnauthorized is the error reporting an authentification error
 	ErrorUnauthorized = errors.New("CheckAuth: client didn't provide correct authorization")
+
+	ErrorValueNotFound = errors.New("couldn't find value")
+)
+
+const (
+	SettingTypeBindAddr = "bindaddr"
+	SettingTypePort     = "port"
+	SettingTypeFile     = "file"
+	SettingTypeBool     = "bool"
+	SettingTypeDuration = "duration"
+	SettingTypeString   = "string"
 )

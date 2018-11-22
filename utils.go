@@ -141,3 +141,13 @@ func StringInArray(x string, y []string) bool {
 	}
 	return false
 }
+
+func CheckBool(x string) (bool, error) {
+	b, err := strconv.ParseBool(x)
+	return b, err
+}
+
+func CheckInt(x string) (int, error) {
+	b, err := strconv.Atoi(x)
+	return b, err
+}

@@ -14,95 +14,6 @@ import (
 	"time"
 )
 
-var ( //where we put flag variables and global variables
-
-	port    string
-	portNum int
-	//WorkingDir is the root of the server
-	WorkingDir string
-	//PathCertFile is the file from which http.ListenAndServeTLS will get its certificates
-	PathCertFile string
-	//PathKeyFile is the file from which http.ListenAndServeTLS will get its encryption keys
-	PathKeyFile string
-
-	verbosityLevel  int
-	mode            string
-	shutdowmTimeout time.Duration
-	requestTimeout  time.Duration
-
-	authPassword string
-	authUsername string
-	webUIport    int
-
-	isVerbose   bool
-	isTLS       bool
-	isKeepAlive bool
-	isDebug     bool
-	isAuth      bool
-	isTellTime  bool
-	isWebUI     bool
-	isGitCommit bool
-	isColored   bool
-)
-
-var webUI = []*Setting{
-	&Setting{
-		Name:  "WorkingDir",
-		Type:  "file",
-		Value: ".",
-	},
-	&Setting{
-		Name:  "PathCertFile",
-		Type:  "file",
-		Value: "",
-	},
-	&Setting{
-		Name:  "PathKeyFile",
-		Type:  "file",
-		Value: "",
-	},
-	&Setting{
-		Name:  "Mode",
-		Type:  "string",
-		Value: "",
-	},
-	&Setting{
-		Name:  "ShutdownTimeout",
-		Type:  "duration",
-		Value: "10s",
-	},
-	&Setting{
-		Name:  "RequestTimeout",
-		Type:  "duration",
-		Value: "10s",
-	},
-	&Setting{
-		Name:  "AuthPassword",
-		Type:  "string",
-		Value: "",
-	},
-	&Setting{
-		Name:  "AuthUsername",
-		Type:  "string",
-		Value: "",
-	},
-	&Setting{
-		Name:  "IsTLS",
-		Type:  "bool",
-		Value: "false",
-	},
-	&Setting{
-		Name:  "IsKeepAlive",
-		Type:  "bool",
-		Value: "true",
-	},
-	&Setting{
-		Name:  "IsAuth",
-		Type:  "bool",
-		Value: "false",
-	},
-}
-
 func main() {
 	if isVerbose {
 		iPrintf("verbosity level: %d\n", verbosityLevel) //on dit le niveau de verbosité
@@ -260,7 +171,7 @@ type WebUISettings struct {
 	isKeepAliveEnabled bool
 	isAuthEnabled      bool
 
-	Settings []*Setting
+	Settings Config
 }
 
 /*
@@ -300,13 +211,13 @@ comment la page de settings va fonctionner:
 
 */
 
-type Setting struct {
+type Option struct {
 	Name  string
 	Type  string
 	Value string
 }
 
-func CheckSettingValid(x *Setting) (*Setting, error) {
+func CheckSettingValid(x *Option) (*Option, error) {
 	switch x.Type {
 	case SettingTypeBool:
 		if StringInArray(x.Value, StringValueBool) {
@@ -338,14 +249,5 @@ func CheckSettingValid(x *Setting) (*Setting, error) {
 	}
 	return nil, nil
 }
-
-const (
-	SettingTypeIpPort   = "ipport"
-	SettingTypePort     = "port"
-	SettingTypeFile     = "file"
-	SettingTypeBool     = "bool"
-	SettingTypeDuration = "duration"
-	SettingTypeString   = "string"
-)
 
 const SettingsJS = ``
