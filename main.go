@@ -111,63 +111,61 @@ var ( //where we put flag variables and global variables
 	isColored   bool
 )
 
-var webUI = WebUISettings{
-	Settings: []*Setting{
-		&Setting{
-			Name:  "WorkingDir",
-			Type:  "file",
-			Value: ".",
-		},
-		&Setting{
-			Name:  "PathCertFile",
-			Type:  "file",
-			Value: "",
-		},
-		&Setting{
-			Name:  "PathKeyFile",
-			Type:  "file",
-			Value: "",
-		},
-		&Setting{
-			Name:  "Mode",
-			Type:  "string",
-			Value: "",
-		},
-		&Setting{
-			Name:  "ShutdownTimeout",
-			Type:  "duration",
-			Value: "10s",
-		},
-		&Setting{
-			Name:  "RequestTimeout",
-			Type:  "duration",
-			Value: "10s",
-		},
-		&Setting{
-			Name:  "AuthPassword",
-			Type:  "string",
-			Value: "",
-		},
-		&Setting{
-			Name:  "AuthUsername",
-			Type:  "string",
-			Value: "",
-		},
-		&Setting{
-			Name:  "IsTLS",
-			Type:  "bool",
-			Value: "false",
-		},
-		&Setting{
-			Name:  "IsKeepAlive",
-			Type:  "bool",
-			Value: "true",
-		},
-		&Setting{
-			Name:  "IsAuth",
-			Type:  "bool",
-			Value: "false",
-		},
+var webUI = []*Setting{
+	&Setting{
+		Name:  "WorkingDir",
+		Type:  "file",
+		Value: ".",
+	},
+	&Setting{
+		Name:  "PathCertFile",
+		Type:  "file",
+		Value: "",
+	},
+	&Setting{
+		Name:  "PathKeyFile",
+		Type:  "file",
+		Value: "",
+	},
+	&Setting{
+		Name:  "Mode",
+		Type:  "string",
+		Value: "",
+	},
+	&Setting{
+		Name:  "ShutdownTimeout",
+		Type:  "duration",
+		Value: "10s",
+	},
+	&Setting{
+		Name:  "RequestTimeout",
+		Type:  "duration",
+		Value: "10s",
+	},
+	&Setting{
+		Name:  "AuthPassword",
+		Type:  "string",
+		Value: "",
+	},
+	&Setting{
+		Name:  "AuthUsername",
+		Type:  "string",
+		Value: "",
+	},
+	&Setting{
+		Name:  "IsTLS",
+		Type:  "bool",
+		Value: "false",
+	},
+	&Setting{
+		Name:  "IsKeepAlive",
+		Type:  "bool",
+		Value: "true",
+	},
+	&Setting{
+		Name:  "IsAuth",
+		Type:  "bool",
+		Value: "false",
 	},
 }
 
@@ -198,7 +196,7 @@ func main() {
 	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
 	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
 	iPrintf("serving %s on port %s\n", WorkingDir, port)
-
+	WebUI()
 	var (
 		err error
 	)
@@ -1182,14 +1180,14 @@ func WebUI() {
 		err error
 	)
 	var (
-		listeningPort string
-		logContent    = make([]byte, 8192)
-		logWriter     = bytes.NewBuffer(logContent)
-		logger        = log.New(logWriter, "", 0)
+		listeningPort string = "8081"
+		logContent           = make([]byte, 8192)
+		logWriter            = bytes.NewBuffer(logContent)
+		logger               = log.New(logWriter, "", 0)
 	)
 
 	handler := new(WebUISettings)
-
+	handler.Settings = webUI
 	serv := http.Server{
 		Addr:              "localhost:" + listeningPort,
 		Handler:           handler,
@@ -1268,6 +1266,7 @@ comment la page de settings va fonctionner:
 
 func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/settings.json" {
+		w.Header().Set("Content-Type", "application/json")
 		enc := json.NewEncoder(w)
 		enc.Encode(s.Settings)
 	}
@@ -1341,4 +1340,14 @@ func Get(set *[]*Setting, x string) *Setting {
 			return (*set)[i]
 		}
 	}
+	return nil
+}
+
+func Set(set *[]*Setting, x string, value string) *Setting {
+	for i := range *set {
+		if (*set)[i].Name == x {
+			(*set)[i].Value = value
+		}
+	}
+	return nil
 }
