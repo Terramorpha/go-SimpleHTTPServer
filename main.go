@@ -9,44 +9,43 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
 
 func main() {
-	if isVerbose {
-		iPrintf("verbosity level: %d\n", verbosityLevel) //on dit le niveau de verbosité
-		iPrintf("mode: %s\n", mode)
+	if MainConfig.Get("IsVerbose").Bool() {
+		iPrintf("verbosity level: %d\n", MainConfig.Get("VerbosityLevel").Int()) //on dit le niveau de verbosité
+		iPrintf("mode: %s\n", MainConfig.Get("Mode").String())
 	}
 
-	if isAuth {
-		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", authUsername, authPassword)
+	if MainConfig.Get("IsAuth").Bool() {
+		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", MainConfig.Get("UserName").String(), MainConfig.Get("Password").String())
 	}
 	han := new(mainHandler) //l'endroit où le serveur stockera ses variables tel que le nb de connections
 	server := &http.Server{
-		Addr:              ":" + port,
+		Addr:              ":" + MainConfig.Get("Port").String(),
 		Handler:           han,
-		ReadHeaderTimeout: requestTimeout,
-		ReadTimeout:       requestTimeout,
-		WriteTimeout:      requestTimeout,
-		IdleTimeout:       requestTimeout,
+		ReadHeaderTimeout: MainConfig.Get("RequestTimeout").Duration(),
+		ReadTimeout:       MainConfig.Get("RequestTimeout").Duration(),
+		WriteTimeout:      MainConfig.Get("RequestTimeout").Duration(),
+		IdleTimeout:       MainConfig.Get("RequestTimeout").Duration(),
 	}
-	server.SetKeepAlivesEnabled(isKeepAlive)
+	server.SetKeepAlivesEnabled(MainConfig.Get("IsKeepAlive").Bool())
 	addrs := GetAddress()
 	iPrintln("you can connect to this server on:")
 	for _, v := range addrs {
-		fmt.Printf("        "+"http://%s/\n", net.JoinHostPort(v.String(), strconv.Itoa(portNum)))
+		fmt.Printf("        "+"http://%s/\n", net.JoinHostPort(v.String(), MainConfig.Get("Port").String()))
 	}
+	vPrintf(1, "Server Config: %v\n", MainConfig)
 	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
 	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
-	iPrintf("serving %s on port %s\n", WorkingDir, port)
-	WebUI()
+	iPrintf("serving %s on port %s\n", MainConfig.Get("WorkingDir").String(), MainConfig.Get("Port").String())
 	var (
 		err error
 	)
-	if isTLS {
-		err = server.ListenAndServeTLS(PathCertFile, PathKeyFile)
+	if MainConfig.Get("IsTLS").Bool() {
+		err = server.ListenAndServeTLS(MainConfig.Get("PathCertFile").String(), MainConfig.Get("PathKeyFile").String())
 	} else {
 		err = server.ListenAndServe()
 	}
@@ -134,15 +133,15 @@ func WebUI() {
 	)
 
 	handler := new(WebUISettings)
-	handler.Settings = webUI
+	handler.Settings = nil
 	serv := http.Server{
 		Addr:              "localhost:" + listeningPort,
 		Handler:           handler,
 		TLSConfig:         nil,
-		ReadTimeout:       requestTimeout,
-		ReadHeaderTimeout: requestTimeout,
-		WriteTimeout:      requestTimeout,
-		IdleTimeout:       requestTimeout,
+		ReadTimeout:       0,
+		ReadHeaderTimeout: 0,
+		WriteTimeout:      0,
+		IdleTimeout:       0,
 		ErrorLog:          logger,
 	}
 	go func() {
@@ -211,12 +210,6 @@ comment la page de settings va fonctionner:
 
 */
 
-type Option struct {
-	Name  string
-	Type  string
-	Value string
-}
-
 func CheckSettingValid(x *Option) (*Option, error) {
 	switch x.Type {
 	case SettingTypeBool:
@@ -232,7 +225,7 @@ func CheckSettingValid(x *Option) (*Option, error) {
 		return x, nil
 	case SettingTypeFile:
 		//TODO
-	case SettingTypeIpPort:
+	case SettingTypeBindAddr:
 		_, _, err := net.SplitHostPort(x.Value)
 		if err != nil {
 			return nil, err

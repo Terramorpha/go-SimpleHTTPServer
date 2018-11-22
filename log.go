@@ -29,7 +29,7 @@ const ( //terminal colors
 )
 
 func Fprint(w io.Writer, x ...interface{}) (int, error) {
-	if isTellTime {
+	if MainConfig.Get("IsTellTime").Bool() {
 		return fmt.Fprint(w, time.Now().Format("Jan 2 15:04:05 MST 2006"), fmt.Sprint(x...))
 	}
 	return fmt.Fprint(w, x...)
@@ -89,7 +89,7 @@ func wPrintf(format string, a ...interface{}) (int, error) {
 }
 
 func vPrint(verbosityTreshold int, x ...interface{}) (int, error) {
-	if verbosityLevel < verbosityTreshold {
+	if MainConfig.Get("VerbosityLevel").Int() < verbosityTreshold {
 		return 0, nil
 	}
 
@@ -107,14 +107,14 @@ func vPrintln(t int, a ...interface{}) (int, error) {
 }
 
 func Colorize(x string, code int) string {
-	if isColored {
+	if MainConfig.Get("IsColored").Bool() {
 		return TextColor(code) + x + TextReset()
 	}
 	return x
 }
 
 func dPrintln(x ...interface{}) (int, error) {
-	if !isDebug {
+	if !MainConfig.Get("IsDebug").Bool() {
 		return 0, nil
 	}
 	return dPrint(fmt.Sprintln(x...))
@@ -122,14 +122,14 @@ func dPrintln(x ...interface{}) (int, error) {
 
 func dPrint(x ...interface{}) (int, error) {
 
-	if !isDebug {
+	if !MainConfig.Get("IsDebug").Bool() {
 		return 0, nil
 	}
 	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[DEBUG]", ColorCyan), fmt.Sprint(x...)))
 }
 
 func dPrintf(format string, x ...interface{}) (int, error) {
-	if !isDebug {
+	if !MainConfig.Get("IsDebug").Bool() {
 		return 0, nil
 	}
 	return dPrint(fmt.Sprintf(format, x...))

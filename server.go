@@ -6,24 +6,94 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"time"
 )
 
-func (c *Config) Get(x string) *Setting {
-	for i := range *c {
-		if (*c)[i].Name == x {
-			return (*c)[i]
-		}
+type Option struct {
+	Type  string
+	Value string
+}
+
+type Config map[string]*Option
+
+func (c Config) String() string {
+	o := ""
+	o += fmt.Sprintf("{")
+	for i, v := range c {
+		o += fmt.Sprintf("	%s (%s):  %v\n", i, v.Type, v.Value)
 	}
+	o += fmt.Sprintf("}")
+	return o
+}
+
+func (o *Option) String() string {
+	return o.Value
+}
+func (o *Option) Bool() bool {
+	b, err := strconv.ParseBool(o.Value)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+func (o *Option) Int() int {
+	b, err := strconv.Atoi(o.Value)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (o *Option) Duration() time.Duration {
+	b, err := time.ParseDuration(o.Value)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (o *Option) SetString(x string) {
+	o.Value = x
+}
+
+func (o *Option) SetInt(x int) {
+	a := strconv.FormatInt(int64(x), 10)
+	o.Value = a
+}
+
+func (o *Option) SetBool(x bool) {
+
+	o.Value = strconv.FormatBool(x)
+}
+
+func (c *Config) Get(x string) *Option {
+	if v, ok := (*c)[x]; ok {
+		return v
+	}
+	panic(fmt.Sprintf("couldn't find %s", x))
+	/*
+		for i := range *c {
+			if (*c)[i].Name == x {
+				return (*c)[i]
+			}
+		}
+	*/
 	return nil
 }
 
-func (c *Config) Set(x string, value string) *Setting {
-	for i := range *c {
-		if (*c)[i].Name == x {
-			(*c)[i].Value = value
-		}
+func (c *Config) Set(x string, value string) {
+	if _, ok := (*c)[x]; !ok {
+		panic(fmt.Sprintf("Config.Set: %s doesn't exist in array", x))
 	}
-	panic(fmt.Sprintf("Config.Set: %s doesn't exist in array", x))
+	(*c)[x].Value = value
+	/*
+		for i := range *c {
+			if (*c)[i].Name == x {
+				(*c)[i].Value = value
+			}
+		}
+	*/
 }
 
 func WaitXInterrupt(x int, c chan os.Signal) chan struct{} {
@@ -53,8 +123,8 @@ func ManageServer(server *http.Server) chan int {
 		signal.Notify(channel, os.Interrupt)
 		<-channel
 		dPrintln("interrupt")
-		fmt.Printf("server shutting down in %v\n", shutdowmTimeout.String())
-		ctx, _ := context.WithTimeout(context.Background(), shutdowmTimeout)
+		fmt.Printf("server shutting down in %v\n", MainConfig.Get("ShutdowmTimeout").Duration().String())
+		ctx, _ := context.WithTimeout(context.Background(), MainConfig.Get("ShutdowmTimeout").Duration())
 		select {
 		case <-WaitXInterrupt(10, channel):
 			iPrintln("server shutdown forcefully")
@@ -71,5 +141,3 @@ func ManageServer(server *http.Server) chan int {
 	}(done)
 	return done
 }
-
-type Config []*Option

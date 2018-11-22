@@ -10,63 +10,90 @@ import (
 )
 
 var MainConfig = Config{
-	&Option{
-		Name:  "Port",
+	"Port": &Option{
 		Type:  "port",
 		Value: "",
 	},
-	&Option{
-		Name:  "WorkingDir",
+	"WorkingDir": &Option{
+
 		Type:  "file",
 		Value: "",
 	},
-	&Option{
-		Name:  "PathCertFile",
+	"PathCertFile": &Option{
+
 		Type:  "file",
 		Value: "",
 	},
-	&Option{
-		Name:  "PathKeyFile",
+	"PathKeyFile": &Option{
+
 		Type:  "file",
 		Value: "",
 	},
-	&Option{
-		Name:  "Mode",
+	"Mode": &Option{
+
 		Type:  "string",
 		Value: "",
 	},
-	&Option{
-		Name:  "ShutdownTimeout",
+	"ShutdownTimeout": &Option{
+
 		Type:  "duration",
 		Value: "",
 	},
-	&Option{
-		Name:  "RequestTimeout",
+	"RequestTimeout": &Option{
+
 		Type:  "duration",
 		Value: "",
 	},
-	&Option{
-		Name:  "AuthPassword",
+	"AuthPassword": &Option{
+
 		Type:  "string",
 		Value: "",
 	},
-	&Option{
-		Name:  "AuthUsername",
+	"AuthUsername": &Option{
+
 		Type:  "string",
 		Value: "",
 	},
-	&Option{
-		Name:  "IsTLS",
+	"IsTLS": &Option{
+
 		Type:  "bool",
 		Value: "",
 	},
-	&Option{
-		Name:  "IsKeepAlive",
+	"IsKeepAlive": &Option{
+
 		Type:  "bool",
 		Value: "",
 	},
-	&Option{
-		Name:  "IsAuth",
+	"IsAuth": &Option{
+
+		Type:  "bool",
+		Value: "",
+	},
+	"Verbosity": &Option{
+		Type:  "int",
+		Value: "",
+	},
+	"UiPort": &Option{
+		Type:  "string",
+		Value: "",
+	},
+	"IsVerbose": &Option{
+		Type:  "bool",
+		Value: "",
+	},
+	"IsDebug": &Option{
+		Type:  "bool",
+		Value: "",
+	},
+	"IsTellTime": &Option{
+		Type:  "bool",
+		Value: "",
+	},
+	"IsWebUI": &Option{
+		Type:  "bool",
+		Value: "",
+	},
+	"IsColored": &Option{
 		Type:  "bool",
 		Value: "",
 	},
@@ -76,8 +103,7 @@ func GetFlags() {
 
 	var ( //where we put flag variables and global variables
 
-		port    string
-		portNum int
+		port string
 		//WorkingDir is the root of the server
 		WorkingDir string
 		//PathCertFile is the file from which http.ListenAndServeTLS will get its certificates
@@ -174,15 +200,15 @@ func GetFlags() {
 		//PathKeyFile is the file from which http.ListenAndServeTLS will get its encryption keys
 		MainConfig.Set("PathKeyFile", PathKeyFile)
 
-		MainConfig.Set("VerbosityLevel", PathCertFile)
+		MainConfig.Get("Verbosity").SetInt(verbosityLevel)
 
 		MainConfig.Set("Mode", mode)
 		MainConfig.Set("ShutdownTimeout", shutdowmTimeout.String())
 		MainConfig.Set("RequestTimeout", requestTimeout.String())
 
 		MainConfig.Set("AuthPassword", authPassword)
-		MainConfig.Set("AuthUserName", authUsername)
-		MainConfig.Set("WebUIPort", webUIport)
+		MainConfig.Set("AuthUsername", authUsername)
+		MainConfig.Set("UiPort", webUIport)
 
 		MainConfig.Set("IsVerbose", strconv.FormatBool(isVerbose))
 		MainConfig.Set("IsTLS", strconv.FormatBool(isTLS))
@@ -195,20 +221,19 @@ func GetFlags() {
 
 		MainConfig.Set("IsColored", strconv.FormatBool(isColored))
 	}
-	fmt.Printf("%#+v\n", MainConfig)
 }
 
 func CheckFlags() {
 	{ //setting auth if pass or user is set
-		if MainConfig.Get("AuthUserName") != "" || MainConfig.Get("AuthPassword") != "" {
+		if MainConfig.Get("AuthUsername").String() != "" || MainConfig.Get("AuthPassword").String() != "" {
 			MainConfig.Set("IsAuth", "true")
 		}
 	}
 	//dPrintln(User)
 
 	{ //checking mode string
-		if MainConfig.Get("Mode") != "" {
-			switch mode {
+		if MainConfig.Get("Mode").String() != "" {
+			switch MainConfig.Get("Mode").String() {
 			case "web":
 			case "fileserver":
 			default:
@@ -217,38 +242,38 @@ func CheckFlags() {
 		}
 	}
 	{ //checking TLS settings
-		if isTLS {
-			if PathCertFile == "" {
+		if MainConfig.Get("IsTLS").Bool() {
+			if MainConfig.Get("PathCertFile").String() == "" {
 				Fatal("path of certificate file must be given for TLS to work (-certfile)")
 			}
-			if PathKeyFile == "" {
+			if MainConfig.Get("PathKeyFile").String() == "" {
 				Fatal("path of key file must be given for TLS to work (-keyfile)")
 			}
-			certfile, err := os.OpenFile(PathCertFile, os.O_RDONLY, 0400)
+			certfile, err := os.OpenFile(MainConfig.Get("PathCertFile").String(), os.O_RDONLY, 0400)
 			if err != nil {
-				Fatal(fmt.Sprintf("certfile %s cant be accessed, TLS can't work", PathCertFile))
+				Fatal(fmt.Sprintf("certfile %s cant be accessed, TLS can't work", MainConfig.Get("PathCertFile").String()))
 			}
 			certfile.Close()
-			keyfile, err := os.OpenFile(PathKeyFile, os.O_RDONLY, 0400)
+			keyfile, err := os.OpenFile(MainConfig.Get("PathKeyFile").String(), os.O_RDONLY, 0400)
 			if err != nil {
-				Fatal(fmt.Sprintf("keyfile %s cant be accessed, TLS can't work", PathKeyFile))
+				Fatal(fmt.Sprintf("keyfile %s cant be accessed, TLS can't work", MainConfig.Get("PathKeyFile").String()))
 			}
 			keyfile.Close()
 		}
 
 	}
 	{ //checking working directory exists (or else nothing will get done)
-		file, err := os.Open(WorkingDir)
+		file, err := os.Open(MainConfig.Get("WorkingDir").String())
 		defer file.Close()
 		if err != nil {
 
 			switch {
 			case os.IsNotExist(err):
-				Fatal(fmt.Sprintf("directory %s doesn't exist: %v", WorkingDir, err))
+				Fatal(fmt.Sprintf("directory %s doesn't exist: %v", MainConfig.Get("WorkingDir").String(), err))
 			case os.IsPermission(err):
-				Fatal(fmt.Sprintf("you don't have permission to open %s directory: %v", WorkingDir, err))
+				Fatal(fmt.Sprintf("you don't have permission to open %s directory: %v", MainConfig.Get("WorkingDir").String(), err))
 			case os.IsTimeout(err):
-				Fatal(fmt.Sprintf("getting directory %s timed out: %v", WorkingDir, err))
+				Fatal(fmt.Sprintf("getting directory %s timed out: %v", MainConfig.Get("WorkingDir").String(), err))
 			}
 
 		}
@@ -256,33 +281,33 @@ func CheckFlags() {
 			Fatal(fmt.Sprintf("error getting file stats: %v", err))
 		} else {
 			if !stat.IsDir() {
-				Fatal(fmt.Sprintf("%s is not a directory", WorkingDir))
+				Fatal(fmt.Sprintf("%s is not a directory", MainConfig.Get("WorkingDir").String()))
 			}
 		}
 
 	}
 	{ //port permission  && validity checking
 
-		portnum, err := net.LookupPort("tcp", port)
+		portnum, err := net.LookupPort("tcp", MainConfig.Get("Port").String())
 		if err != nil {
 
 			Fatal("error invalid port number: " + err.Error())
 		}
-		portNum = portnum
-		if portNum < 1024 {
-			wPrintf("need root to bind on port %d\n", portNum)
+		if portnum < 1024 {
+			wPrintf("need root to bind on port %d\n", portnum)
 		}
 
 	}
 
 	{ //setting correct verbosity levels
 
-		if verbosityLevel > 0 { //au cas ou l'utilisateur a pensé à metre le niveau de verbosité mais pas d'activer la verbosité
-			isVerbose = true //on l'active
+		if MainConfig.Get("Verbosity").Int() > 0 { //au cas ou l'utilisateur a pensé à metre le niveau de verbosité mais pas d'activer la verbosité
+			MainConfig.Get("IsVerbose").SetBool(true) //on l'active
 		}
-		if isVerbose && verbosityLevel == 0 { //si c'est verbose, le niveau devrait être plus élevé que 0
-			verbosityLevel = 1
+		if MainConfig.Get("IsVerbose").Bool() && MainConfig.Get("Verbosity").Int() == 0 { //si c'est verbose, le niveau devrait être plus élevé que 0
+			MainConfig.Get("VerbosityLevel").SetInt(1)
 		}
 
 	}
+	fmt.Println(MainConfig)
 }

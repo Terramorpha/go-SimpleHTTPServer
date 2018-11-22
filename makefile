@@ -3,7 +3,7 @@ outfile := bin/web
 BUILD := go build -ldflags '-X main.gitCommit=$(commit)'
 
 
-all: install
+all: build
 
 build: main.go
 	go build -ldflags '-X main.gitCommit=$(commit)' -o bin/web

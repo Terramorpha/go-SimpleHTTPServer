@@ -51,7 +51,10 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 	split := strings.Split(string(result), ":")
 	username, password = split[0], split[1]
 	dPrintf("username: %s password: %s\n", username, password)
-	if password != authPassword || username != authUsername {
+	if password != MainConfig.Get("Password").String() {
+		return ErrorUnauthorized
+	}
+	if username != MainConfig.Get("Username").String() {
 		return ErrorUnauthorized
 	}
 	return nil
@@ -176,7 +179,7 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TOD
 	io.Copy(os.Stdout, r.Body)
 	return
 	fmt.Println("</body>")
-	if mode != "fileserver" {
+	if MainConfig.Get("Mode").String() != "fileserver" {
 		return
 	}
 	var (
@@ -221,8 +224,9 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TOD
 		if err != nil {
 			Fatal(err)
 		}
+		wd := MainConfig.Get("WorkingDir").String()
 		for _, v := range f {
-			file, err := os.Create(WorkingDir + r.URL.Path + "/" + v.FileName)
+			file, err := os.Create(wd + r.URL.Path + "/" + v.FileName)
 			if err != nil {
 				wPrintln(err)
 				continue
@@ -243,7 +247,7 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TOD
 //
 //that's it
 func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBody bool) { //serves get requests
-
+	wd := MainConfig.Get("WorkingDir").String()
 	{ //setting default header
 		w.Header().Add("Accept-Ranges", "bytes")
 	}
@@ -253,7 +257,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		id       = m.NewRequest() // request id
 	)
 
-	if isAuth { //basic auth
+	if MainConfig.Get("IsAuth").Bool() { //basic auth
 		err := CheckAuth(w, r)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -272,13 +276,13 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		defer m.Log(1, finishedServing)
 	}
 	// the actual URL
-	if isDebug {
+	if MainConfig.Get("IsDebug").Bool() {
 		w.Header().Add("Request-Id", strconv.Itoa(id))
 	}
 
 	vPrintf(1, "[%d] asking for %v\n", id, r.URL.EscapedPath())
 
-	ComposedPath := WorkingDir + path.Clean(r.URL.Path)
+	ComposedPath := wd + path.Clean(r.URL.Path)
 	//vPrintf(0, "%s\n", ComposedPath)
 	if strings.Contains(r.RequestURI, "../") { // ../ permits a request to access files outside the server's scope
 		//w.Header().Add("Connection", "close")
@@ -317,9 +321,9 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 			lastModified string = time.Now().UTC().Format(http.TimeFormat)
 			content      []byte
 		)
-		switch mode { // checks for index.html
+		switch MainConfig.Get("Mode").String() { // checks for index.html
 		default:
-			content, err = render(WorkingDir, r.URL.Path)
+			content, err = render(wd, r.URL.Path)
 			if err != nil {
 				http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 				vPrintf(1, "[%d] error rendering directory: %v\n", id, err)
@@ -335,7 +339,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 				return
 			}
 		case "fileserver":
-			renderedFolder, err := render(WorkingDir, r.URL.Path)
+			renderedFolder, err := render(wd, r.URL.Path)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				vPrintf(2, "[%d] error reading index.html: %v\n", id, err)
