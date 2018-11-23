@@ -89,7 +89,7 @@ func wPrintf(format string, a ...interface{}) (int, error) {
 }
 
 func vPrint(verbosityTreshold int, x ...interface{}) (int, error) {
-	if MainConfig.Get("VerbosityLevel").Int() < verbosityTreshold {
+	if MainConfig.Get("Verbosity").Int() < verbosityTreshold {
 		return 0, nil
 	}
 
