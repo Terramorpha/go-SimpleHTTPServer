@@ -2,10 +2,8 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -15,7 +13,7 @@ import (
 
 func main() {
 	if MainConfig.Get("IsVerbose").Bool() {
-		iPrintf("verbosity level: %d\n", MainConfig.Get("VerbosityLevel").Int()) //on dit le niveau de verbosité
+		iPrintf("verbosity level: %d\n", MainConfig.Get("Verbosity").Int()) //on dit le niveau de verbosité
 		iPrintf("mode: %s\n", MainConfig.Get("Mode").String())
 	}
 
@@ -44,6 +42,10 @@ func main() {
 	var (
 		err error
 	)
+	if MainConfig.Get("IsUI").Bool() {
+		go WebUI()
+
+	}
 	if MainConfig.Get("IsTLS").Bool() {
 		err = server.ListenAndServeTLS(MainConfig.Get("PathCertFile").String(), MainConfig.Get("PathKeyFile").String())
 	} else {
@@ -119,58 +121,6 @@ func ManageCli() chan int {
 	}()
 
 	return c
-}
-
-func WebUI() {
-	var (
-		err error
-	)
-	var (
-		listeningPort string = "8081"
-		logContent           = make([]byte, 8192)
-		logWriter            = bytes.NewBuffer(logContent)
-		logger               = log.New(logWriter, "", 0)
-	)
-
-	handler := new(WebUISettings)
-	handler.Settings = nil
-	serv := http.Server{
-		Addr:              "localhost:" + listeningPort,
-		Handler:           handler,
-		TLSConfig:         nil,
-		ReadTimeout:       0,
-		ReadHeaderTimeout: 0,
-		WriteTimeout:      0,
-		IdleTimeout:       0,
-		ErrorLog:          logger,
-	}
-	go func() {
-		err = serv.ListenAndServe()
-		Fatal(err)
-		//if err != http.ErrServerClosed {
-		//}
-
-	}()
-}
-
-type WebUISettings struct {
-
-	//WorkingDir is the root of the server
-	WorkingDir string
-	//PathCertFile is the file from which http.ListenAndServeTLS will get its certificates
-	PathCertFile string
-	//PathKeyFile is the file from which http.ListenAndServeTLS will get its encryption keys
-	PathKeyFile        string
-	mode               string
-	shutdowmTimeout    time.Duration
-	requestTimeout     time.Duration
-	authPassword       string
-	authUsername       string
-	isTLS              bool
-	isKeepAliveEnabled bool
-	isAuthEnabled      bool
-
-	Settings Config
 }
 
 /*

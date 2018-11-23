@@ -73,10 +73,6 @@ var MainConfig = Config{
 		Type:  "int",
 		Value: "",
 	},
-	"UiPort": &Option{
-		Type:  "string",
-		Value: "",
-	},
 	"IsVerbose": &Option{
 		Type:  "bool",
 		Value: "",
@@ -89,8 +85,12 @@ var MainConfig = Config{
 		Type:  "bool",
 		Value: "",
 	},
-	"IsWebUI": &Option{
+	"IsUI": &Option{
 		Type:  "bool",
+		Value: "",
+	},
+	"UiPort": &Option{
+		Type:  "string",
 		Value: "",
 	},
 	"IsColored": &Option{
@@ -134,8 +134,6 @@ func GetFlags() {
 	//on demande le help, commit ou version
 	flag.BoolVar(&isGitCommit, "commit", false, "prints the git commit the code was compiled on")
 
-	{
-	}
 	{ //standard
 		//port number
 		flag.StringVar(&port, "port", "8080", "defines the TCP port on which the web server is going to serve (must be a valid port number)") // le port (par défault c'est le 8080)
@@ -166,7 +164,7 @@ func GetFlags() {
 		flag.StringVar(&mode, "mode", "", "sets server mode")
 		{ // web ui flags
 			flag.BoolVar(&isWebUI, "webui", false, "enables web ui")
-			flag.StringVar(&webUIport, "uiport", "8080", "specifies web ui port")
+			flag.StringVar(&webUIport, "uiport", "8081", "specifies web ui port")
 		}
 	}
 
@@ -208,7 +206,6 @@ func GetFlags() {
 
 		MainConfig.Set("AuthPassword", authPassword)
 		MainConfig.Set("AuthUsername", authUsername)
-		MainConfig.Set("UiPort", webUIport)
 
 		MainConfig.Set("IsVerbose", strconv.FormatBool(isVerbose))
 		MainConfig.Set("IsTLS", strconv.FormatBool(isTLS))
@@ -217,7 +214,8 @@ func GetFlags() {
 		MainConfig.Set("IsAuth", strconv.FormatBool(isAuth))
 		MainConfig.Set("IsTellTime", strconv.FormatBool(isTellTime))
 
-		MainConfig.Set("IsWebUI", strconv.FormatBool(isWebUI))
+		MainConfig.Set("IsUI", strconv.FormatBool(isWebUI))
+		MainConfig.Set("UiPort", webUIport)
 
 		MainConfig.Set("IsColored", strconv.FormatBool(isColored))
 	}
@@ -305,9 +303,8 @@ func CheckFlags() {
 			MainConfig.Get("IsVerbose").SetBool(true) //on l'active
 		}
 		if MainConfig.Get("IsVerbose").Bool() && MainConfig.Get("Verbosity").Int() == 0 { //si c'est verbose, le niveau devrait être plus élevé que 0
-			MainConfig.Get("VerbosityLevel").SetInt(1)
+			MainConfig.Get("Verbosity").SetInt(1)
 		}
 
 	}
-	fmt.Println(MainConfig)
 }

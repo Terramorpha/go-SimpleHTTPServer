@@ -19,7 +19,7 @@ type Config map[string]*Option
 
 func (c Config) String() string {
 	o := ""
-	o += fmt.Sprintf("{")
+	o += fmt.Sprintf("{\n")
 	for i, v := range c {
 		o += fmt.Sprintf("	%s (%s):  %v\n", i, v.Type, v.Value)
 	}
@@ -123,8 +123,8 @@ func ManageServer(server *http.Server) chan int {
 		signal.Notify(channel, os.Interrupt)
 		<-channel
 		dPrintln("interrupt")
-		fmt.Printf("server shutting down in %v\n", MainConfig.Get("ShutdowmTimeout").Duration().String())
-		ctx, _ := context.WithTimeout(context.Background(), MainConfig.Get("ShutdowmTimeout").Duration())
+		fmt.Printf("server shutting down in %v\n", MainConfig.Get("ShutdownTimeout").Duration().String())
+		ctx, _ := context.WithTimeout(context.Background(), MainConfig.Get("ShutdownTimeout").Duration())
 		select {
 		case <-WaitXInterrupt(10, channel):
 			iPrintln("server shutdown forcefully")
