@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 func WebUI() {
@@ -48,21 +50,41 @@ type WebUISettings struct {
 }
 
 func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/settings.json" {
+	switch r.URL.Path {
+	case "/frontend.js":
+		f, err := os.Open("frontend.js")
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		defer f.Close()
+		w.Header().Set("Content-Type", "application/javascript")
+		io.Copy(w, f)
+		return
+	case "/settings.json":
 		w.Header().Set("Content-Type", "application/json")
+
 		enc := json.NewEncoder(w)
 		enc.Encode(MainConfig)
 		return
+	case "/":
+		f, err := os.Open("frontend.html")
+		if err != nil {
+			wPrintln(err)
+			return
+		}
+		defer f.Close()
+		io.Copy(w, f)
+		//page := BasicHTMLFile("", "marmelade", "/frontend.js")
+		w.Header().Set("Content-Type", "text/html")
+
+		return
+	default:
 	}
-	page := BasicHTMLFile("", "marmelade", "")
-	w.Write([]byte(page))
 }
 
 func JsSettingsRenderer() []byte {
-
+	return nil
 }
 
-var jsr = []byte(`
-
-
-`)
+var jsr = []byte("")

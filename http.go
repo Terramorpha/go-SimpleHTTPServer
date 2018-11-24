@@ -149,8 +149,10 @@ func BasicHTMLFile(head, body, script string) string {
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>%s</head>
-<body>%s</body>
+<body>
 %s
+<script src="%s"></script>
+</body>
 </html>`, head, body, script)
 }
 
