@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -50,6 +52,9 @@ type WebUISettings struct {
 }
 
 func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		s.UpdateConfig(w, r)
+	}
 	switch r.URL.Path {
 	case "/frontend.js":
 		f, err := os.Open("frontend.js")
@@ -85,6 +90,14 @@ func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func JsSettingsRenderer() []byte {
 	return nil
+}
+
+func (s *WebUISettings) UpdateConfig(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("got post")
+	a, _ := ioutil.ReadAll(r.Body)
+	//fmt.Println(r.Header)
+	fmt.Fprintln(os.Stdout, string(a))
+	r.Body.Close()
 }
 
 var jsr = []byte("")

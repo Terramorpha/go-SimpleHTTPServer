@@ -18,17 +18,22 @@ xmlHttp.onreadystatechange = function() {
             console.log(settings[key])
             var t
             var v = `value="${settings[key].Value}"`
+            var n = settings[key].Name
+            var i = ""
             switch (settings[key].Type) {
                 case "bool":
-                t = "checkbox"
+                t = "switch"
+                v += `value=${key}` 
                 if (settings[key].Value == "true") {
-                    v = `checked="checked"`
+                    v += ` checked="checked"`
 
                 }
                 break;
-
+                default:
+                i +=
             }
-            settingsDiv.innerHTML += `${key} <input type="${t}" ${v}></input></br>`
+            settingsDiv.innerHTML += `<form method="POST"><label>${key}</label> <input name="${key}" type="${t}" ${v}></br>
+            <input type="submit" value="update"></form>`
         })
     }
 }
