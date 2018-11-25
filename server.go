@@ -123,7 +123,7 @@ func ManageServer(server *http.Server) chan int {
 		signal.Notify(channel, os.Interrupt)
 		<-channel
 		dPrintln("interrupt")
-		fmt.Printf("server shutting down in %v\n", MainConfig.Get("ShutdownTimeout").Duration().String())
+		iPrintf("server shutting down in %v\n", MainConfig.Get("ShutdownTimeout").Duration().String())
 		ctx, _ := context.WithTimeout(context.Background(), MainConfig.Get("ShutdownTimeout").Duration())
 		select {
 		case <-WaitXInterrupt(10, channel):

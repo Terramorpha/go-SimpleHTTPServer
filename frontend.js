@@ -51,10 +51,10 @@ xmlHttp.onreadystatechange = function() {
                     i += "</br><input name=\"{0}\" type=\"{1}\" {2}><label>true</label></br><input name=\"{0}\" type=\"{1}\" {3}><label>false</label>".format(key, t, v1, v2)
                 break;
                 default:
-                i += "<input name=\"${key}\" type=\"${t}\" ${v}></input>"
+                i += "<input name=\"{0}\" type=\"${1}\" ${2}></input>".format(key, t, v)
                 break
             }
-            settingsDiv.innerHTML += "<form method=\"POST\">${key}${i}</br><input type=\"submit\" value=\"update\"></form>"
+            settingsDiv.innerHTML += "<form method=\"POST\">{0}{1}</br><input type=\"submit\" value=\"update\"></form>".format(key, i)
         })
     }
 }

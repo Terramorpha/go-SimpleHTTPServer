@@ -28,6 +28,8 @@ const ( //terminal colors
 	ColorGrey    = 7
 )
 
+var LogOutput io.Writer = os.Stdout
+
 func Fprint(w io.Writer, x ...interface{}) (int, error) {
 	if MainConfig.Get("IsTellTime").Bool() {
 		return fmt.Fprint(w, time.Now().Format("Jan 2 15:04:05 MST 2006"), fmt.Sprint(x...))
@@ -53,7 +55,7 @@ func Fatal(x interface{}) {
 }
 
 func iPrint(a ...interface{}) (int, error) {
-	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[INFOS]", ColorGreen), fmt.Sprint(a...)))
+	return Fprint(LogOutput, fmt.Sprintf("%s %s", Colorize("[INFOS]", ColorGreen), fmt.Sprint(a...)))
 }
 
 func iPrintln(a ...interface{}) (int, error) {
@@ -65,7 +67,7 @@ func iPrintf(format string, a ...interface{}) (int, error) {
 }
 
 func ePrint(a ...interface{}) (int, error) {
-	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[ERROR]", ColorRed), fmt.Sprint(a...)))
+	return Fprint(LogOutput, fmt.Sprintf("%s %s", Colorize("[ERROR]", ColorRed), fmt.Sprint(a...)))
 }
 
 func ePrintln(a ...interface{}) (int, error) {
@@ -77,7 +79,7 @@ func ePrintf(format string, a ...interface{}) (int, error) {
 }
 
 func wPrint(a ...interface{}) (int, error) {
-	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[WARN ]", ColorYellow), fmt.Sprint(a...)))
+	return Fprint(LogOutput, fmt.Sprintf("%s %s", Colorize("[WARN ]", ColorYellow), fmt.Sprint(a...)))
 }
 
 func wPrintln(a ...interface{}) (int, error) {
@@ -93,7 +95,7 @@ func vPrint(verbosityTreshold int, x ...interface{}) (int, error) {
 		return 0, nil
 	}
 
-	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[VERBO]", ColorGrey), fmt.Sprint(x...)))
+	return Fprint(LogOutput, fmt.Sprintf("%s %s", Colorize("[VERBO]", ColorGrey), fmt.Sprint(x...)))
 
 }
 
@@ -125,7 +127,7 @@ func dPrint(x ...interface{}) (int, error) {
 	if !MainConfig.Get("IsDebug").Bool() {
 		return 0, nil
 	}
-	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[DEBUG]", ColorCyan), fmt.Sprint(x...)))
+	return Fprint(LogOutput, fmt.Sprintf("%s %s", Colorize("[DEBUG]", ColorCyan), fmt.Sprint(x...)))
 }
 
 func dPrintf(format string, x ...interface{}) (int, error) {

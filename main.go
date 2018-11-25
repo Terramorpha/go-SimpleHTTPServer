@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -13,8 +14,13 @@ import (
 
 var Testing = "false"
 
+var MainServer *mainHandler
+
 func main() {
-	fmt.Println(Testing)
+
+	var (
+		err error
+	)
 	if MainConfig.Get("IsVerbose").Bool() {
 		iPrintf("verbosity level: %d\n", MainConfig.Get("Verbosity").Int()) //on dit le niveau de verbosité
 		iPrintf("mode: %s\n", MainConfig.Get("Mode").String())
@@ -23,10 +29,13 @@ func main() {
 	if MainConfig.Get("IsAuth").Bool() {
 		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", MainConfig.Get("UserName").String(), MainConfig.Get("Password").String())
 	}
-	han := new(mainHandler) //l'endroit où le serveur stockera ses variables tel que le nb de connections
+	MainServer = new(mainHandler) //l'endroit où le serveur stockera ses variables tel que le nb de connections
+	MainServer.logBuffer = NewF(make([]byte, 1<<16))
+	a := NewF(make([]byte, 8192))
+	use(a)
 	server := &http.Server{
 		Addr:              ":" + MainConfig.Get("Port").String(),
-		Handler:           han,
+		Handler:           MainServer,
 		ReadHeaderTimeout: MainConfig.Get("RequestTimeout").Duration(),
 		ReadTimeout:       MainConfig.Get("RequestTimeout").Duration(),
 		WriteTimeout:      MainConfig.Get("RequestTimeout").Duration(),
@@ -42,9 +51,7 @@ func main() {
 	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
 	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
 	iPrintf("serving %s on port %s\n", MainConfig.Get("WorkingDir").String(), MainConfig.Get("Port").String())
-	var (
-		err error
-	)
+
 	if MainConfig.Get("IsUI").Bool() {
 		go WebUI()
 
@@ -70,14 +77,13 @@ type mainHandler struct {
 	//ReqCount is a simple tracker for the number of http Request mainHandler has received
 	Requests  int
 	Succeeded int
-	logBuffer string
+	logBuffer io.ReadWriteSeeker
 }
 
 //Log
 //implements a basic logging system. not fully useful yet.
 func (m *mainHandler) Log(x ...interface{}) {
-	m.logBuffer += fmt.Sprintf("[%s] %s\n", time.Now().UTC().Format(http.TimeFormat), fmt.Sprint(x...))
-
+	fmt.Fprintf(m.logBuffer, "[%s] %s\n", time.Now().UTC().Format(http.TimeFormat), fmt.Sprint(x...))
 }
 
 //NewRequest increments the request counter. used for debugging and parsing logs.
@@ -195,5 +201,3 @@ func CheckSettingValid(x *Option) (*Option, error) {
 	}
 	return nil, nil
 }
-
-const SettingsJS = ``

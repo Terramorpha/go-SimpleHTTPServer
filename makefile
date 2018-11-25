@@ -57,4 +57,8 @@ load_files:
 	echo \` >> 2.go
 
 clean_files:
-	rm 1.go 2.go
+	rm -f 1.go 2.go
+	echo "package main" > 1.go
+	echo "var JsFrontend []byte" >> 1.go
+	echo "package main" > 2.go
+	echo "var HtmlFrontend []byte" >> 2.go

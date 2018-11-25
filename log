@@ -1,75 +1,359 @@
-[32m[INFOS][0m verbosity level: 5
-[32m[INFOS][0m mode: 
-[32m[INFOS][0m auth enabled
-Username:
-Password:
-[36m[DEBUG][0m [{1 65536 lo  up|loopback} {2 1500 enp0s31f6 38:d5:47:e1:e9:b8 up|broadcast|multicast} {3 1500 docker0 02:42:8c:ea:f3:70 up|broadcast|multicast}]
+[32m[INFOS][0m verbosity level: 12
+[32m[INFOS][0m mode: fileserver
+[36m[DEBUG][0m [{1 65536 lo  up|loopback} {2 1500 enp0s31f6 38:d5:47:e1:e9:b8 up|broadcast|multicast}]
 [36m[DEBUG][0m addresses of interface 1: [192.168.0.137/24 fe80::4f12:be25:15fd:2e3b/64]
-[36m[DEBUG][0m addresses of interface 2: [172.17.0.1/16]
 [37m[VERBO][0m other address: 192.168.0.137
 [37m[VERBO][0m other address: fe80::4f12:be25:15fd:2e3b
-[37m[VERBO][0m other address: 172.17.0.1
 [32m[INFOS][0m you can connect to this server on:
-[32m[INFOS][0m serving ./ on port 8080
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [0] got GET request to localhost:8080 from 127.0.0.1:58788 (/)
+[37m[VERBO][0m Server Config: {
+	UiPort (string):  8081
+	WorkingDir (file):  fs
+	Mode (string):  fileserver
+	RequestTimeout (duration):  2562047h47m16.854775807s
+	IsTLS (bool):  false
+	Verbosity (int):  12
+	IsUI (bool):  false
+	Port (port):  8080
+	AuthPassword (string):  
+	IsAuth (bool):  false
+	IsTellTime (bool):  false
+	IsColored (bool):  true
+	ShutdownTimeout (duration):  10s
+	AuthUsername (string):  
+	IsKeepAlive (bool):  true
+	IsVerbose (bool):  true
+	PathCertFile (file):  
+	PathKeyFile (file):  
+	IsDebug (bool):  true
+}
+[32m[INFOS][0m serving fs on port 8080
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [0] got GET request to / from 192.168.0.137:44302
 [37m[VERBO][0m [0] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [0] at 127.0.0.1:58788
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [1] got GET request to localhost:8080 from 127.0.0.1:58790 (/)
-[37m[VERBO][0m [1] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [1] at 127.0.0.1:58790
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [2] got GET request to localhost:8080 from 127.0.0.1:58792 (/)
-[37m[VERBO][0m [2] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [2] at 127.0.0.1:58792
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [3] got GET request to localhost:8080 from 127.0.0.1:58794 (/)
-[37m[VERBO][0m [3] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [3] at 127.0.0.1:58794
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [4] got GET request to localhost:8080 from 127.0.0.1:58796 (/)
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [0] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [1] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [1] asking for /favicon.ico
+[37m[VERBO][0m [1] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [1] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: POST / HTTP/1.1
+[36m[DEBUG][0m header: map[Accept-Encoding:[gzip, deflate] Content-Type:[multipart/form-data; boundary=---------------------------11592361219189068842081727241] Authorization:[Basic dXNlcjpwYXM=] Upgrade-Insecure-Requests:[1] User-Agent:[Mozilla/5.0 (X11; Linux x86_64; rv:63.0) Gecko/20100101 Firefox/63.0] Accept:[text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8] Connection:[keep-alive] Cookie:[CSRF-Token-GILIT=5yf9zhhQdqRnTpCWarzLapKcdb9zcqHd; io=-olSs-hfUZGNohNZAAAC] Accept-Language:[en-US,en;q=0.5] Referer:[http://localhost:8080/] Content-Length:[233]]
+[36m[DEBUG][0m content-type: "multipart/form-data; boundary=---------------------------11592361219189068842081727241"
+[36m[DEBUG][0m maybe gonna print the shit
+[36m[DEBUG][0m printing the shit called a.out
+[36m[DEBUG][0m wd: fs
+[36m[DEBUG][0m path: /
+[36m[DEBUG][0m filename: a.out
+[36m[DEBUG][0m total file path: fs/a.out
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [2] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [2] asking for /favicon.ico
+[37m[VERBO][0m [2] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [2] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [3] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [3] asking for /favicon.ico
+[37m[VERBO][0m [3] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [3] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [4] got GET request to / from 192.168.0.137:44302
 [37m[VERBO][0m [4] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [4] at 127.0.0.1:58796
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [5] got GET request to localhost:8080 from 127.0.0.1:58798 (/)
-[37m[VERBO][0m [5] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [5] at 127.0.0.1:58798
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [6] got GET request to localhost:8080 from 127.0.0.1:58800 (/)
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [4] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [5] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [5] asking for /favicon.ico
+[37m[VERBO][0m [5] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [5] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [6] got GET request to / from 192.168.0.137:44302
 [37m[VERBO][0m [6] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [6] at 127.0.0.1:58800
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [7] got GET request to localhost:8080 from 127.0.0.1:58802 (/)
-[37m[VERBO][0m [7] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [7] at 127.0.0.1:58802
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [8] got GET request to localhost:8080 from 127.0.0.1:58804 (/)
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [6] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [7] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [7] asking for /favicon.ico
+[37m[VERBO][0m [7] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [7] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [8] got GET request to / from 192.168.0.137:44302
 [37m[VERBO][0m [8] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [8] at 127.0.0.1:58804
-[36m[DEBUG][0m username:  password: 
-[37m[VERBO][0m [9] got GET request to localhost:8080 from 127.0.0.1:58806 (/)
-[37m[VERBO][0m [9] asking for /
-[36m[DEBUG][0m file opened: .//
-[37m[VERBO][0m .// is a folder
-[37m[VERBO][0m finished serving [9] at 127.0.0.1:58806
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [8] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [9] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [9] asking for /favicon.ico
+[37m[VERBO][0m [9] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [9] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [10] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [10] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [10] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [11] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [11] asking for /favicon.ico
+[37m[VERBO][0m [11] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [11] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [12] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [12] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [12] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [13] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [13] asking for /favicon.ico
+[37m[VERBO][0m [13] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [13] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [14] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [14] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [14] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [15] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [15] asking for /favicon.ico
+[37m[VERBO][0m [15] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [15] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [16] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [16] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [16] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [17] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [17] asking for /favicon.ico
+[37m[VERBO][0m [17] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [17] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [18] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [18] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [18] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [19] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [19] asking for /favicon.ico
+[37m[VERBO][0m [19] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [19] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [20] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [20] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [20] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [21] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [21] asking for /favicon.ico
+[37m[VERBO][0m [21] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [21] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [22] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [22] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [22] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [23] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [23] asking for /favicon.ico
+[37m[VERBO][0m [23] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [23] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [24] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [24] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [24] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [25] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [25] asking for /favicon.ico
+[37m[VERBO][0m [25] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [25] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [26] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [26] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [26] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [27] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [27] asking for /favicon.ico
+[37m[VERBO][0m [27] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [27] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [28] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [28] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [28] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [29] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [29] asking for /favicon.ico
+[37m[VERBO][0m [29] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [29] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [30] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [30] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [30] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [31] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [31] asking for /favicon.ico
+[37m[VERBO][0m [31] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [31] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [32] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [32] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [32] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [33] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [33] asking for /favicon.ico
+[37m[VERBO][0m [33] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [33] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [34] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [34] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [34] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [35] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [35] asking for /favicon.ico
+[37m[VERBO][0m [35] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [35] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [36] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [36] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [36] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [37] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [37] asking for /favicon.ico
+[37m[VERBO][0m [37] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [37] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [38] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [38] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [38] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [39] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [39] asking for /favicon.ico
+[37m[VERBO][0m [39] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [39] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [40] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [40] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [40] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [41] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [41] asking for /favicon.ico
+[37m[VERBO][0m [41] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [41] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [42] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [42] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [42] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [43] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [43] asking for /favicon.ico
+[37m[VERBO][0m [43] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [43] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [44] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [44] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [44] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [45] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [45] asking for /favicon.ico
+[37m[VERBO][0m [45] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [45] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [46] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [46] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [46] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [47] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [47] asking for /favicon.ico
+[37m[VERBO][0m [47] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [47] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [48] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [48] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [48] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [49] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [49] asking for /favicon.ico
+[37m[VERBO][0m [49] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [49] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [50] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [50] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [50] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [51] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [51] asking for /favicon.ico
+[37m[VERBO][0m [51] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [51] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [52] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [52] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [52] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [53] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [53] asking for /favicon.ico
+[37m[VERBO][0m [53] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [53] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [54] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [54] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [54] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [55] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [55] asking for /favicon.ico
+[37m[VERBO][0m [55] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [55] at 192.168.0.137:44304
+[37m[VERBO][0m new Connection: GET / HTTP/1.1
+[37m[VERBO][0m [56] got GET request to / from 192.168.0.137:44302
+[37m[VERBO][0m [56] asking for /
+[36m[DEBUG][0m file opened: fs/
+[37m[VERBO][0m fs/ is a folder
+[37m[VERBO][0m finished serving [56] at 192.168.0.137:44302
+[37m[VERBO][0m new Connection: GET /favicon.ico HTTP/1.1
+[37m[VERBO][0m [57] got GET request to /favicon.ico from 192.168.0.137:44304
+[37m[VERBO][0m [57] asking for /favicon.ico
+[37m[VERBO][0m [57] request failed: open fs/favicon.ico: no such file or directory
+[37m[VERBO][0m finished serving [57] at 192.168.0.137:44304
 [36m[DEBUG][0m interrupt
+[32m[INFOS][0m server shutting down in 10s
 [32m[INFOS][0m server shutdown cleanly

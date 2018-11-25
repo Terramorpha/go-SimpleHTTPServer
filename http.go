@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"time"
 )
 
+//CheckAuth checks (if simple authentication is enabled) if requests is allowed to access content
 func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 
 	w.Header().Add("WWW-Authenticate", "Basic") //add new login schemes
@@ -163,83 +165,51 @@ func BasicFileServerHeader() string {
 
 const form = `
 <form method="post" enctype="multipart/form-data">
-<input type="file" id="fileid" name="filename"/>
-<button>Submit</button>
+<input type="file" id="fileid" name="filename" multiple>
+<input type="submit" value="Submit">
 </form>
 `
 
 //ManagePOST manages post forms (currently only used in fs mode)
 func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TODO: plus tard.
-
-	w.WriteHeader(http.StatusNotImplemented)
-
-	//Le faire marcher
-	//fmt.Println("about to have color")
-	//fmt.Println(Colorize(fmt.Sprint(r.URL), ColorMagenta))
-	//fmt.Println(Colorize(fmt.Sprintf("%s", RenderHeader(&r.Header)), ColorBlue))
-	//fmt.Println("<body>")
-	io.Copy(os.Stdout, r.Body)
-	return
-	fmt.Println("</body>")
 	if MainConfig.Get("Mode").String() != "fileserver" {
+		dPrintln("got post, not correct mode:", MainConfig.Get("Mode").String())
+		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
-	var (
-		//content []byte
-		files [][]byte
-	)
 	t := r.Header.Get("Content-Type")
-	vals := strings.Split(t, "; ")
+	dPrintf("header: %v\n", r.Header)
+	dPrintf("content-type: \"%v\"\n", t)
+	separator := strings.Split(r.Header.Get("Content-Type"), "; ")[1]
+	separator = strings.Split(separator, "=")[1]
 
-	if vals[0] == "multipart/form-data" {
-		var separator string
-		fmt.Sscanf(vals[1], "boundary=%s", &separator)
-		dPrintln("separator:", separator)
-		//content = make([]byte, r.ContentLength)
-		iPrintln("START")
-		/*n, err := r.Body.Read(content)
-		if int64(n) != r.ContentLength {
-			wPrintln("ManagePost: couldn't read entire form:", err.Error())
-			return
-		}
-		*/
-		use(files)
-		for i := 0; true; i++ {
-			c, err := ReadSlice(r.Body, []byte("--"+separator))
-			dPrintln("CCC:", string(c))
-			if err != nil {
-				wPrintln(err)
-				if err == io.EOF {
-					break
-				}
-			}
-			if len(c) == 0 {
-				continue
-			}
-			files = append(files, c)
-
-		}
-		//fmt.Fscanf(r.Body, "%s"+separator)
-		iPrintln("DONE")
-		fmt.Println(files)
-		f, err := ParseFormFile(files...)
+	multiReader := multipart.NewReader(r.Body, separator)
+	dPrintln("maybe gonna print the shit")
+	for {
+		part, err := multiReader.NextPart()
 		if err != nil {
-			Fatal(err)
-		}
-		wd := MainConfig.Get("WorkingDir").String()
-		for _, v := range f {
-			file, err := os.Create(wd + r.URL.Path + "/" + v.FileName)
-			if err != nil {
+			if err != io.EOF {
 				wPrintln(err)
-				continue
 			}
-			defer file.Close()
-			file.Write(v.Data)
+			break
 		}
+		defer part.Close()
+		dPrintf("printing the shit called %s\n", part.FileName())
+		dPrintf("wd: %s\n", MainConfig.Get("WorkingDir").String())
+		dPrintf("path: %s\n", r.URL.Path)
+		dPrintf("filename: %s\n", part.FileName())
+		tot := path.Clean(MainConfig.Get("WorkingDir").String() + r.URL.Path + "/" + part.FileName())
+		dPrintf("total file path: %s\n", tot)
+
+		f, err := os.Create(tot)
+		if err != nil {
+			panic(err)
+		}
+		io.Copy(f, part)
+
 	}
-	dPrintln(t)
-	iPrintln("GOT a Post request!!!")
-	dPrintf("%+#v\n", r)
+	r.Method = "GET"
+	m.ManageGET(w, r, true)
 
 }
 
@@ -359,7 +329,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		return
 	}
 
-	//file assured not to be a directory
+	//file assured not to be a directorymultiple directory
 	//also not a render of the dir
 	//this is an actual file
 
@@ -390,6 +360,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	NumBytesToCopy := fileInfo.Size()
 	{ // checking if request is partial content request
 		if Range := r.Header.Get("Range"); Range != "" { //range request
+			dPrintf("header for a range request: %v\n", r.Header)
 			var (
 				offset      int64
 				higherBound int64
@@ -459,6 +430,7 @@ func (m *mainHandler) ManageCONNECT(w http.ResponseWriter, r *http.Request) { //
 
 //ServeHTTP separes different types of request.
 func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	vPrintf(1, "new Connection: %s %s %s\n", r.Method, r.URL.EscapedPath(), r.Proto)
 	defer r.Body.Close()
 	switch r.Method {
 	case "GET":
