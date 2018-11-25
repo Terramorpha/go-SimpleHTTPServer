@@ -11,7 +11,10 @@ import (
 	"time"
 )
 
+var Testing = "false"
+
 func main() {
+	fmt.Println(Testing)
 	if MainConfig.Get("IsVerbose").Bool() {
 		iPrintf("verbosity level: %d\n", MainConfig.Get("Verbosity").Int()) //on dit le niveau de verbosité
 		iPrintf("mode: %s\n", MainConfig.Get("Mode").String())

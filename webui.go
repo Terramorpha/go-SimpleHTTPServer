@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func WebUI() {
@@ -57,14 +58,7 @@ func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.URL.Path {
 	case "/frontend.js":
-		f, err := os.Open("frontend.js")
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		defer f.Close()
-		w.Header().Set("Content-Type", "application/javascript")
-		io.Copy(w, f)
+		FrontendGetJs(w)
 		return
 	case "/settings.json":
 		w.Header().Set("Content-Type", "application/json")
@@ -73,16 +67,7 @@ func (s *WebUISettings) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		enc.Encode(MainConfig)
 		return
 	case "/":
-		f, err := os.Open("frontend.html")
-		if err != nil {
-			wPrintln(err)
-			return
-		}
-		defer f.Close()
-		io.Copy(w, f)
-		//page := BasicHTMLFile("", "marmelade", "/frontend.js")
-		w.Header().Set("Content-Type", "text/html")
-
+		FrontendGetHtml(w)
 		return
 	default:
 	}
@@ -93,11 +78,52 @@ func JsSettingsRenderer() []byte {
 }
 
 func (s *WebUISettings) UpdateConfig(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("got post")
 	a, _ := ioutil.ReadAll(r.Body)
 	//fmt.Println(r.Header)
+	defer r.Body.Close()
 	fmt.Fprintln(os.Stdout, string(a))
-	r.Body.Close()
+	split := strings.Split(string(a), "=")
+	if len(split) != 2 {
+		return
+	}
+	k, v := split[0], split[1]
+	oldv := MainConfig.Get(k).String()
+	MainConfig.Set(k, v)
+	if oldv != v {
+		iPrintf("%s changed from \"%s\" to \"%s\"\n", k, Colorize(oldv, ColorMagenta), Colorize(v, ColorMagenta))
+	}
 }
 
 var jsr = []byte("")
+
+func FrontendGetJs(w http.ResponseWriter) {
+	switch Testing {
+	case "true":
+		f, err := os.Open("frontend.js")
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		defer f.Close()
+		w.Header().Set("Content-Type", "application/javascript")
+		io.Copy(w, f)
+	case "false":
+		io.Copy(w, bytes.NewReader([]byte(JsFrontend)))
+	}
+}
+
+func FrontendGetHtml(w http.ResponseWriter) {
+	switch Testing {
+	case "true":
+		f, err := os.Open("frontend.js")
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		defer f.Close()
+		w.Header().Set("Content-Type", "text/html")
+		io.Copy(w, f)
+	case "false":
+		io.Copy(w, bytes.NewReader([]byte(HtmlFrontend)))
+	}
+}

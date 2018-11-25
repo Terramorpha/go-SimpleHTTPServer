@@ -3,7 +3,8 @@ outfile := bin/web
 BUILD := go build -ldflags '-X main.gitCommit=$(commit)'
 
 
-all: build
+all: build_prod
+build_prod: load_files build clean_files
 
 build: main.go
 	go build -ldflags '-X main.gitCommit=$(commit)' -o bin/web
@@ -12,7 +13,10 @@ install: build
 	sudo cp -f bin/web /bin/web
 
 
-test: build runtest
+test: build_test runtest
+
+build_test:
+	go build -ldflags '-X main.Testing=true -X main.gitCommit=$(commit)' -o bin/web
 
 testr: build runtest_remote
 
@@ -39,3 +43,18 @@ install_android:
 	adb push --sync web_android /sdcard/dev/web
 	adb shell "su -c 'mount -o remount,rw /system;cp -f /sdcard/dev/web /system/xbin/web;chmod +x /system/xbin/web;mount -o remount,ro /system;exit;'"
 	rm web_android
+
+
+load_files:
+	echo "package main" > 1.go
+	echo "var HtmlFrontend = \`" >> 1.go
+	cat frontend.html >> 1.go
+	echo \` >> 1.go
+
+	echo "package main" > 2.go
+	echo "var JsFrontend = \`" >> 2.go
+	cat frontend.js >> 2.go
+	echo \` >> 2.go
+
+clean_files:
+	rm 1.go 2.go

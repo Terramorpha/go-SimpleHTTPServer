@@ -51,10 +51,10 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 	split := strings.Split(string(result), ":")
 	username, password = split[0], split[1]
 	dPrintf("username: %s password: %s\n", username, password)
-	if password != MainConfig.Get("Password").String() {
+	if password != MainConfig.Get("AuthPassword").String() {
 		return ErrorUnauthorized
 	}
-	if username != MainConfig.Get("Username").String() {
+	if username != MainConfig.Get("AuthUsername").String() {
 		return ErrorUnauthorized
 	}
 	return nil
