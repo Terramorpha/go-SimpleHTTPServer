@@ -48,12 +48,12 @@ install_android:
 load_files:
 	echo "package main" > 1.go
 	echo "var HtmlFrontend = \`" >> 1.go
-	cat frontend.html >> 1.go
+	cat webui/frontend.html >> 1.go
 	echo \` >> 1.go
 
 	echo "package main" > 2.go
 	echo "var JsFrontend = \`" >> 2.go
-	cat frontend.js >> 2.go
+	cat webui/frontend.js >> 2.go
 	echo \` >> 2.go
 
 clean_files:
