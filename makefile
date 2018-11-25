@@ -22,7 +22,7 @@ testr: build runtest_remote
 
 
 runtest:
-	./bin/web -D -V 4 -dir /home/terramorpha
+	./bin/web -D -V 4 -dir /home/terramorpha -webui
 
 runtest_remote:
 	sudo ./bin/web -D -V 4 -dir /home/terramorpha -port 80

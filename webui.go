@@ -9,7 +9,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func WebUI() {
@@ -87,19 +89,41 @@ func (s *WebUISettings) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	k, v := split[0], split[1]
-	oldv := MainConfig.Get(k).String()
-	MainConfig.Set(k, v)
-	if oldv != v {
-		iPrintf("%s changed from \"%s\" to \"%s\"\n", k, Colorize(oldv, ColorMagenta), Colorize(v, ColorMagenta))
+	SelectedOption := MainConfig.Get(k)
+	oldValue := SelectedOption.String()
+	switch SelectedOption.Type { //switch to verify validity of update
+	default:
+		fallthrough
+	case OptionTypeString:
+		SelectedOption.SetString(v)
+	case OptionTypeBool:
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			vPrintf(1, "couldn't update value %s to %s, %v\n", k, v, err)
+			return
+		}
+		SelectedOption.SetBool(b)
+	case OptionTypeDuration:
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			vPrintf(1, "couldn't update value %s to %s, %v\n", k, v, err)
+			return
+		}
+		SelectedOption.SetString(d.String())
+	}
+	if oldValue != v {
+		iPrintf("%s changed from \"%s\" to \"%s\"\n", k, Colorize(oldValue, ColorMagenta), Colorize(v, ColorMagenta))
 	}
 }
 
 var jsr = []byte("")
 
+const webuiFolder = "webui"
+
 func FrontendGetJs(w http.ResponseWriter) {
 	switch Testing {
 	case "true":
-		f, err := os.Open("frontend.js")
+		f, err := os.Open(webuiFolder + "/" + "frontend.js")
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -115,7 +139,7 @@ func FrontendGetJs(w http.ResponseWriter) {
 func FrontendGetHtml(w http.ResponseWriter) {
 	switch Testing {
 	case "true":
-		f, err := os.Open("frontend.js")
+		f, err := os.Open(webuiFolder + "/" + "frontend.html")
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return

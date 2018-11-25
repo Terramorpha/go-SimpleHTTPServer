@@ -28,10 +28,12 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 		err      error
 		result   []byte
 	)
+
 	var (
 		authScheme string
 		s          string
 	)
+
 	total := r.Header.Get("Authorization") //checking if client knows he needs auth
 	if total == "" {                       //he doesn't know
 		return ErrorUnauthorized
@@ -47,12 +49,14 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 	result, err = base64.StdEncoding.DecodeString(s)
 	if err != nil {
 		fmt.Println(err)
+
 		return ErrorUnauthorized
 	}
 
 	split := strings.Split(string(result), ":")
 	username, password = split[0], split[1]
 	dPrintf("username: %s password: %s\n", username, password)
+
 	if password != MainConfig.Get("AuthPassword").String() {
 		return ErrorUnauthorized
 	}

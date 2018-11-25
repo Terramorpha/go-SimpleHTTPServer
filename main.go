@@ -2,13 +2,11 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -168,36 +166,3 @@ comment la page de settings va fonctionner:
 		(chiffre)(m/s/h/µs/ms)
 
 */
-
-func CheckSettingValid(x *Option) (*Option, error) {
-	switch x.Type {
-	case SettingTypeBool:
-		if StringInArray(x.Value, StringValueBool) {
-			return x, nil
-		}
-		return nil, errors.New("invalid boolean value. Valid booleans are:\n" + strings.Join(StringValueBool, " ,"))
-	case SettingTypeDuration:
-		_, err := time.ParseDuration(x.Value)
-		if err != nil {
-			return nil, err
-		}
-		return x, nil
-	case SettingTypeFile:
-		//TODO
-	case SettingTypeBindAddr:
-		_, _, err := net.SplitHostPort(x.Value)
-		if err != nil {
-			return nil, err
-		}
-		return x, err
-	case SettingTypePort:
-		_, err := net.LookupPort("tcp", x.Value)
-		if err != nil {
-			return nil, err
-		}
-		return x, nil
-	default:
-		return nil, nil
-	}
-	return nil, nil
-}

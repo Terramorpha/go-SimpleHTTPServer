@@ -24,10 +24,10 @@ var ( //error constants
 )
 
 const (
-	SettingTypeBindAddr = "bindaddr"
-	SettingTypePort     = "port"
-	SettingTypeFile     = "file"
-	SettingTypeBool     = "bool"
-	SettingTypeDuration = "duration"
-	SettingTypeString   = "string"
+	OptionTypeBindAddr = "bindaddr"
+	OptionTypePort     = "port"
+	OptionTypeFile     = "file"
+	OptionTypeBool     = "bool"
+	OptionTypeDuration = "duration"
+	OptionTypeString   = "string"
 )

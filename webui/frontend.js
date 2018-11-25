@@ -25,18 +25,18 @@ xmlHttp.onreadystatechange = function() {
         settingsDiv.innerHTML = ""
         Object.keys(settings).sort().forEach(function(key){
             console.log(settings[key])
-            var t
+            var t = ""
             var v = "value=\"{0}\"".format(settings[key].Value)
-            var n = settings[key].Name
             var i = ""
             switch (settings[key].Type) {
                 case "int":
-                    i += "<input name={0} type=\"number\">".format(key)
+                    t = "type=\"{0}\"".format("number")
+                    i += "<input name=\"{0}\" {1} {2}>".format(key, t, v)
                 break
                 case "bool":
                     var v1 = ""
                     var v2 = ""
-                    t = "radio"
+                    t = "type=\"radio\""
                     v1 += "value=\"true\""
                     v2 += "value=\"false\""
                     switch (settings[key].Value){
@@ -48,10 +48,10 @@ xmlHttp.onreadystatechange = function() {
                         break
                     }
                         
-                    i += "</br><input name=\"{0}\" type=\"{1}\" {2}><label>true</label></br><input name=\"{0}\" type=\"{1}\" {3}><label>false</label>".format(key, t, v1, v2)
+                    i += "</br><input name=\"{0}\" {1} {2}><label>true</label></br><input name=\"{0}\" {1} {3}><label>false</label>".format(key, t, v1, v2)
                 break;
                 default:
-                i += "<input name=\"{0}\" type=\"${1}\" ${2}></input>".format(key, t, v)
+                i += "<input name=\"{0}\" ${1} ${2}></input>".format(key, t, v)
                 break
             }
             settingsDiv.innerHTML += "<form method=\"POST\">{0}{1}</br><input type=\"submit\" value=\"update\"></form>".format(key, i)
