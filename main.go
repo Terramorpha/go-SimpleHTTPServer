@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -26,26 +25,44 @@ const ( //terminal colors
 	//ColorReset resets all colors/properties in terminal escape sequences
 	ColorReset = 0
 	//ColorBold makes text bold
-	ColorBold       = 1
-	ColorDim        = 2
+	ColorBold = 1
+	//ColorDim makes it dim
+	ColorDim = 2
+	//ColorUnderlined underlines
 	ColorUnderlined = 4
-	ColorBlink      = 5
-	ColorReversed   = 7
-	ColorHidden     = 8
+	//ColorBlink makes the text blink
+	ColorBlink = 5
+	//ColorReversed I dunno
+	ColorReversed = 7
+	//ColorHidden hides text... completly useless in this particular context
+	ColorHidden = 8
 
-	ColorBlack   = 0
-	ColorRed     = 1
-	ColorGreen   = 2
-	ColorYellow  = 3
-	ColorBlue    = 4
-	ColorMagenta = 5
-	ColorCyan    = 6
-	ColorGrey    = 7
+	//ColorBlack is black
+	ColorBlack = 0
+	//ColorRed is red
+	ColorRed = 1
+	//ColorGreen is Green
+	ColorGreen = 2
+	//ColorYellow is yellow
+	ColorYellow = 3
+	//ColorBlue is blue
+	ColorBlue = 4
+	//ColorPurple is purple
+	ColorPurple = 5
+	//ColorCyan is Cyan
+	ColorCyan = 6
+	//ColorWhite is white
+	ColorWhite = 7
 )
 
 var (
 	gitCommit = ""
 )
+
+var modes = []string{
+	"web",
+	"proxy",
+}
 
 const (
 	defaultWorkingDir = "."
@@ -121,9 +138,11 @@ var conf struct {
 	isWebUIEnabled     bool
 	isGitCommit        bool
 	isColorEnabled     bool
+	isVersion          bool
 }
 
 func main() {
+
 	if conf.isVerbose {
 		iPrintf("verbosity level: %d\n", conf.verbosityLevel) //on dit le niveau de verbosité
 		iPrintf("mode: %s\n", conf.mode)
@@ -180,10 +199,14 @@ func init() { //preparing server and checking
 
 	{ //checking mode string
 		if conf.mode != "" {
-			switch conf.mode {
-			case "web":
-			case "fileserver":
-			default:
+			isIn := false
+			for i := range modes {
+				if modes[i] == conf.mode {
+					isIn = true
+					break
+				}
+			}
+			if !isIn {
 				Fatal("invalid mode. only these are valid:\n" + fmt.Sprint("web", "fileserver"))
 			}
 		}
@@ -261,21 +284,18 @@ func init() { //preparing server and checking
 
 type mainHandler struct {
 	//ReqCount is a simple tracker for the number of http Request mainHandler has received
-	Requests  int
-	Succeeded int
-	logBuffer string
-}
-
-//Log
-//implements a basic logging system. not fully useful yet.
-func (m *mainHandler) Log(x ...interface{}) {
-	m.logBuffer += fmt.Sprintf("[%s] %s\n", time.Now().UTC().Format(http.TimeFormat), fmt.Sprint(x...))
-
+	Requests int
 }
 
 //ServeHTTP separes different types of request.
 func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
+	if conf.mode == "proxy" {
+		if r.Method != "CONNECT" {
+			w.WriteHeader(http.StatusNotImplemented)
+			return
+		}
+	}
 	switch r.Method {
 	case "GET":
 		m.ManageGET(w, r, true)
@@ -284,6 +304,7 @@ func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		m.ManagePOST(w, r)
 	case "CONNECT":
+
 		m.ManageCONNECT(w, r)
 	default:
 		iPrintln("Got request:", r.Method)
@@ -298,16 +319,29 @@ func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //to give the functionnality
 //of an HTTP proxy
 func (m *mainHandler) ManageCONNECT(w http.ResponseWriter, r *http.Request) { //currently shit
-	return
 	dPrintf("%#+v\n", r.URL)
-
-	conn, err := net.Dial("tcp", r.URL.Host)
+	connRemote, err := net.Dial("tcp", r.URL.Host)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
-
+	defer connRemote.Close()
+	w.Header().Del("Content-Length")
 	w.WriteHeader(http.StatusOK)
-	io.Copy(w, conn)
+
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		wPrintf("Coulnd't create hijacker\n")
+	}
+	conn, buf, err := hj.Hijack()
+	if err != nil {
+		wPrintf("Coulnd't hijack connection: %s\n", err)
+	}
+	defer conn.Close()
+	buf.Flush()
+
+	go io.Copy(conn, connRemote)
+	io.Copy(connRemote, conn)
+
 }
 
 //NewRequest increments the request counter. used for debugging and parsing logs.
@@ -345,13 +379,12 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 
 	}
 
+	iPrintf("%v requested %s\n", r.RemoteAddr, r.URL.Path)
 	{ //logging
 		log := fmt.Sprintf("[%d] got %s request to %v from %v\n", id, r.Method, r.RequestURI, r.RemoteAddr)
 		finishedServing := fmt.Sprintf("finished serving [%d] at %v\n", id, r.RemoteAddr)
-		m.Log(log)
 		vPrintf(1, log)
 		defer vPrintf(1, finishedServing)
-		defer m.Log(1, finishedServing)
 	}
 	// the actual URL
 	if conf.isDebug {
@@ -396,7 +429,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 	if fileInfo.IsDir() { //the path pointed to by the URL exists AND is a folder
 		vPrintf(1, "%s is a folder\n", ComposedPath)
 		var (
-			lastModified string = time.Now().UTC().Format(http.TimeFormat)
+			lastModified = time.Now().UTC().Format(http.TimeFormat)
 			content      []byte
 		)
 		switch conf.mode { // checks for index.html
@@ -450,7 +483,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 				return
 			}
 		}
-		MimeType = mime.TypeByExtension("." + Extension(File.Name()))
+		MimeType = mime.TypeByExtension("." + path.Ext(File.Name()))
 		//fmt.Printf("(%s) mime: %s", File.Name(), MimeType)
 		if MimeType == "" {
 			MimeType = http.DetectContentType(DetectBuff[:n])
@@ -525,7 +558,7 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TOD
 	//fmt.Println(Colorize(fmt.Sprint(r.URL), ColorMagenta))
 	//fmt.Println(Colorize(fmt.Sprintf("%s", RenderHeader(&r.Header)), ColorBlue))
 	//fmt.Println("<body>")
-	io.Copy(os.Stdout, r.Body)
+	//io.Copy(os.Stdout, r.Body)
 	return
 	fmt.Println("</body>")
 	if conf.mode != "fileserver" {
@@ -669,6 +702,7 @@ func GetAddress() (addrs []net.IP) {
 
 }
 
+//Line returns the line number it is called from
 func Line(skip ...int) string { //tells line number
 	var s int
 	if len(skip) == 0 {
@@ -686,12 +720,14 @@ func Line(skip ...int) string { //tells line number
 func use(x ...interface{}) {
 
 }
+
+//ReadSlice is Like bufio.ReadLine but you can provide a delimiter string
 func ReadSlice(r io.Reader, delim []byte) ([]byte, error) {
 	var (
 		iDelim    int
-		out       []byte = make([]byte, 0, len(delim))
-		middleMan []byte = make([]byte, 0)
-		oneByte          = make([]byte, 1)
+		out       = make([]byte, 0, len(delim))
+		middleMan = make([]byte, 0)
+		oneByte   = make([]byte, 1)
 	)
 
 	for iDelim < len(delim) {
@@ -713,12 +749,14 @@ func ReadSlice(r io.Reader, delim []byte) ([]byte, error) {
 	return out, nil
 }
 
+//FormFile is a structure representing a form
 type FormFile struct {
 	Data           []byte
 	FileName       string
 	WantedFileName string
 }
 
+//ParseFormFile parses the form
 func ParseFormFile(x ...[]byte) ([]*FormFile, error) {
 	o := make([]*FormFile, 0)
 	for _, v := range x {
@@ -759,6 +797,7 @@ func ParseFormFile(x ...[]byte) ([]*FormFile, error) {
 	return o, nil
 }
 
+//ParseHeader parses rhe header in a multipart form
 func ParseHeader(x string) map[string]string {
 	o := map[string]string{}
 
@@ -773,15 +812,7 @@ func ParseHeader(x string) map[string]string {
 	return o
 }
 
-func ReadPostRequest(x string) map[string]string {
-	o := make(map[string]string)
-	split := strings.Split(x, "&")
-	for _, v := range split {
-		pair := strings.Split(v, "=")
-		o[pair[0]] = pair[1]
-	}
-	return o
-}
+//WaitXInterrupt waits for x interrupts before returning
 func WaitXInterrupt(x int, c chan os.Signal) chan struct{} {
 	ret := make(chan struct{})
 	go func() {
@@ -802,6 +833,7 @@ func waitTillDone(f func() error) chan error {
 	return o
 }
 
+//ManageServer manages the server and srops it whenever it receives SIGINT
 func ManageServer(server *http.Server) chan int {
 	done := make(chan int)
 	go func(ret chan int) {
@@ -828,8 +860,11 @@ func ManageServer(server *http.Server) chan int {
 	return done
 }
 
+//Flags creates all the flags
 func Flags() {
 	{ //flag declaring and parsing
+
+		flag.BoolVar(&conf.isVersion, "version", false, "prints version information")
 		{ //on demande le help, commit ou version
 			flag.BoolVar(&conf.isGitCommit, "commit", false, "prints the git commit the code was compiled on")
 		}
@@ -880,6 +915,15 @@ func Flags() {
 		}
 
 		flag.Parse() //on interprète
+		if conf.isVersion {
+			fmt.Fprintf(os.Stderr,
+				"git commit: %s\ncpu architecture: %s\noperation system: %s\n",
+				gitCommit,
+				runtime.GOARCH,
+				runtime.GOOS,
+			)
+			os.Exit(0)
+		}
 		if conf.isGitCommit {
 			fmt.Println(gitCommit)
 			os.Exit(0)
@@ -887,24 +931,30 @@ func Flags() {
 	}
 }
 
+//Fprint prints is the bottom function of all the log functions and prepends the time whenever needed
 func Fprint(w io.Writer, x ...interface{}) (int, error) {
 	if conf.isTellTime {
 		return fmt.Fprint(w, time.Now().Format("Jan 2 15:04:05 MST 2006"), fmt.Sprint(x...))
 	}
 	return fmt.Fprint(w, x...)
 }
+
+//TextColor creates escap sequence from color
 func TextColor(colorCode int) string {
 	return fmt.Sprintf("\033[3%dm", colorCode)
 }
 
+//TextStyle creates escape sequence from style
 func TextStyle(styleCode int) string {
 	return fmt.Sprintf("\033[%dm", styleCode)
 }
 
+//TextReset creates escape sequence for resetting color and style
 func TextReset() string {
 	return fmt.Sprintf("\033[%dm", ColorReset)
 }
 
+//Fatal is a wrapper for when something doesn't work
 func Fatal(x interface{}) {
 	ePrintln(x)
 	os.Exit(1)
@@ -952,7 +1002,7 @@ func vPrint(verbosityTreshold int, x ...interface{}) (int, error) {
 		return 0, nil
 	}
 
-	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[VERBO]", ColorGrey), fmt.Sprint(x...)))
+	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[VERBO]", ColorWhite), fmt.Sprint(x...)))
 
 }
 
@@ -965,6 +1015,7 @@ func vPrintln(t int, a ...interface{}) (int, error) {
 	return vPrint(t, a...)
 }
 
+//Colorize colorizes the given string
 func Colorize(x string, code int) string {
 	if conf.isColorEnabled {
 		return TextColor(code) + x + TextReset()
@@ -994,6 +1045,7 @@ func dPrintf(format string, x ...interface{}) (int, error) {
 	return dPrint(fmt.Sprintf(format, x...))
 }
 
+//CheckAuth verifies the authentication field is correct
 func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 
 	w.Header().Add("WWW-Authenticate", "Basic") //add new login schemes
@@ -1035,6 +1087,7 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+//RenderHeader turns the header back into text
 func RenderHeader(h *http.Header) string {
 	o := ""
 	for i, v := range *h {
@@ -1044,88 +1097,13 @@ func RenderHeader(h *http.Header) string {
 
 }
 
+//SendStatusFail fails rhe request
 func SendStatusFail(w http.ResponseWriter, code int) {
 	w.WriteHeader(code)
 	fmt.Fprintln(w, code, http.StatusText(code))
 }
 
-func ManageCli() chan int {
-	c := make(chan int)
-	go func() {
-		b := bufio.NewReader(os.Stdin)
-		for {
-			s, err := b.ReadString('\n')
-			if err != nil {
-				panic(err)
-			}
-			args := ParseCommandLine(s)
-			fmt.Println(args)
-		}
-	}()
-
-	return c
-}
-
-func ParseCommandLine(s string) []string {
-	var (
-		outputSlice = make([]string, 0)
-		currentWord []rune
-
-		doubleQuoted bool
-		quoted       bool
-		escaped      bool
-	)
-	currentWord = make([]rune, 0, 32)
-	for _, char := range s { //ranging through each char
-		//fmt.Printf("char: %c\n", char)
-		//fmt.Println(string(currentWord))
-		if escaped { // if char before was \ :
-			currentWord = append(currentWord, char)
-			escaped = false
-			continue
-		}
-		if char == '\\' {
-			escaped = true
-			continue
-		}
-		if char == '\'' {
-			quoted = !quoted
-			continue
-		}
-
-		if char == '"' {
-			doubleQuoted = !doubleQuoted
-			continue
-		}
-
-		if char == ' ' {
-			outputSlice = append(outputSlice, string(currentWord))
-			currentWord = make([]rune, 0, 32)
-			//fmt.Println(outputSlice)
-			continue
-		}
-		currentWord = append(currentWord, char)
-
-	}
-	if len(currentWord) > 0 {
-		outputSlice = append(outputSlice, string(currentWord))
-	}
-	outputSlice = StripBlankStrings(outputSlice)
-
-	return outputSlice
-}
-
-func StripBlankStrings(s []string) []string {
-	o := make([]string, len(s))
-	for i := range s {
-		if len(s[i]) == 0 {
-			continue
-		}
-		o = append(o, s[i])
-	}
-	return o
-}
-
+//Extens
 func Extension(s string) string {
 	a := strings.Split(s, ".")
 	return a[len(a)-1]
