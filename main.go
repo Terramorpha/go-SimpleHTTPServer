@@ -61,6 +61,7 @@ var ( //error constants
 	ErrorUnauthorized = errors.New("CheckAuth: client didn't provide correct authorization")
 )
 
+/*
 var ( //where we put flag variables and global variables
 
 	port    string
@@ -91,40 +92,70 @@ var ( //where we put flag variables and global variables
 	isGitCommit        bool
 	isColorEnabled     bool
 )
+*/
+var conf struct {
+	port    string
+	portNum int
+	//WorkingDir is the root of the server
+	WorkingDir string
+	//PathCertFile is the file from which http.ListenAndServeTLS will get its certificates
+	PathCertFile string
+	//PathKeyFile is the file from which http.ListenAndServeTLS will get its encryption keys
+	PathKeyFile string
+
+	verbosityLevel  int
+	mode            string
+	shutdowmTimeout time.Duration
+	requestTimeout  time.Duration
+
+	authPassword string
+	authUsername string
+	webUIport    int
+
+	isVerbose          bool
+	isTLS              bool
+	isKeepAliveEnabled bool
+	isDebug            bool
+	isAuthEnabled      bool
+	isTellTime         bool
+	isWebUIEnabled     bool
+	isGitCommit        bool
+	isColorEnabled     bool
+}
 
 func main() {
-	if isVerbose {
-		iPrintf("verbosity level: %d\n", verbosityLevel) //on dit le niveau de verbosité
-		iPrintf("mode: %s\n", mode)
+	if conf.isVerbose {
+		iPrintf("verbosity level: %d\n", conf.verbosityLevel) //on dit le niveau de verbosité
+		iPrintf("mode: %s\n", conf.mode)
 	}
 
-	if isAuthEnabled {
-		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", authUsername, authPassword)
+	if conf.isAuthEnabled {
+		iPrintf("auth enabled\nUsername:%s\nPassword:%s\n", conf.authUsername, conf.authPassword)
 	}
 	han := new(mainHandler) //l'endroit où le serveur stockera ses variables tel que le nb de connections
 	server := &http.Server{
-		Addr:              ":" + port,
+		Addr:              ":" + conf.port,
 		Handler:           han,
-		ReadHeaderTimeout: requestTimeout,
-		ReadTimeout:       requestTimeout,
-		WriteTimeout:      requestTimeout,
-		IdleTimeout:       requestTimeout,
+		ReadHeaderTimeout: conf.requestTimeout,
+		ReadTimeout:       conf.requestTimeout,
+		WriteTimeout:      conf.requestTimeout,
+		IdleTimeout:       conf.requestTimeout,
 	}
-	server.SetKeepAlivesEnabled(isKeepAliveEnabled)
+	server.SetKeepAlivesEnabled(conf.isKeepAliveEnabled)
 	addrs := GetAddress()
 	iPrintln("you can connect to this server on:")
 	for _, v := range addrs {
-		fmt.Printf("        "+"http://%s/\n", net.JoinHostPort(v.String(), strconv.Itoa(portNum)))
+		fmt.Printf("        "+"http://%s/\n", net.JoinHostPort(v.String(), strconv.Itoa(conf.portNum)))
 	}
-	if isTLS { //l'encryption n'est pas implémentée, don si elle activée, crash
+	if conf.isTLS { //l'encryption n'est pas implémentée, don si elle activée, crash
 		//	Fatal(errors.New("tls not yet implemented"))
 	}
 	done := ManageServer(server) //manageserver permet de faire runner le server pi de savoir quand il est fermé
 	//server.RegisterOnShutdown(func() {  }) //quoi faire quand le serveur ferme
-	iPrintf("serving %s on port %s\n", WorkingDir, port)
-	if isTLS {
+	iPrintf("serving %s on port %s\n", conf.WorkingDir, conf.port)
+	if conf.isTLS {
 		//not yet implemented
-		err := server.ListenAndServeTLS(PathCertFile, PathKeyFile)
+		err := server.ListenAndServeTLS(conf.PathCertFile, conf.PathKeyFile)
 		if err != http.ErrServerClosed {
 			Fatal(err)
 		}
@@ -141,15 +172,15 @@ func init() { //preparing server and checking
 	Flags()
 
 	{ //setting auth if pass or user is set
-		if authUsername != "" || authPassword != "" {
-			isAuthEnabled = true
+		if conf.authUsername != "" || conf.authPassword != "" {
+			conf.isAuthEnabled = true
 		}
 	}
 	//dPrintln(User)
 
 	{ //checking mode string
-		if mode != "" {
-			switch mode {
+		if conf.mode != "" {
+			switch conf.mode {
 			case "web":
 			case "fileserver":
 			default:
@@ -158,38 +189,38 @@ func init() { //preparing server and checking
 		}
 	}
 	{ //checking TLS settings
-		if isTLS {
-			if PathCertFile == "" {
+		if conf.isTLS {
+			if conf.PathCertFile == "" {
 				Fatal("path of certificate file must be given for TLS to work (-certfile)")
 			}
-			if PathKeyFile == "" {
+			if conf.PathKeyFile == "" {
 				Fatal("path of key file must be given for TLS to work (-keyfile)")
 			}
-			certfile, err := os.OpenFile(PathCertFile, os.O_RDONLY, 0400)
+			certfile, err := os.OpenFile(conf.PathCertFile, os.O_RDONLY, 0400)
 			if err != nil {
-				Fatal(fmt.Sprintf("certfile %s cant be accessed, TLS can't work", PathCertFile))
+				Fatal(fmt.Sprintf("certfile %s cant be accessed, TLS can't work", conf.PathCertFile))
 			}
 			certfile.Close()
-			keyfile, err := os.OpenFile(PathKeyFile, os.O_RDONLY, 0400)
+			keyfile, err := os.OpenFile(conf.PathKeyFile, os.O_RDONLY, 0400)
 			if err != nil {
-				Fatal(fmt.Sprintf("keyfile %s cant be accessed, TLS can't work", PathKeyFile))
+				Fatal(fmt.Sprintf("keyfile %s cant be accessed, TLS can't work", conf.PathKeyFile))
 			}
 			keyfile.Close()
 		}
 
 	}
 	{ //checking working directory exists (or else nothing will get done)
-		file, err := os.Open(WorkingDir)
+		file, err := os.Open(conf.WorkingDir)
 		defer file.Close()
 		if err != nil {
 
 			switch {
 			case os.IsNotExist(err):
-				Fatal(fmt.Sprintf("directory %s doesn't exist: %v", WorkingDir, err))
+				Fatal(fmt.Sprintf("directory %s doesn't exist: %v", conf.WorkingDir, err))
 			case os.IsPermission(err):
-				Fatal(fmt.Sprintf("you don't have permission to open %s directory: %v", WorkingDir, err))
+				Fatal(fmt.Sprintf("you don't have permission to open %s directory: %v", conf.WorkingDir, err))
 			case os.IsTimeout(err):
-				Fatal(fmt.Sprintf("getting directory %s timed out: %v", WorkingDir, err))
+				Fatal(fmt.Sprintf("getting directory %s timed out: %v", conf.WorkingDir, err))
 			}
 
 		}
@@ -197,32 +228,32 @@ func init() { //preparing server and checking
 			Fatal(fmt.Sprintf("error getting file stats: %v", err))
 		} else {
 			if !stat.IsDir() {
-				Fatal(fmt.Sprintf("%s is not a directory", WorkingDir))
+				Fatal(fmt.Sprintf("%s is not a directory", conf.WorkingDir))
 			}
 		}
 
 	}
 	{ //port permission  && validity checking
 
-		portnum, err := net.LookupPort("tcp", port)
+		portnum, err := net.LookupPort("tcp", conf.port)
 		if err != nil {
 
 			Fatal("error invalid port number: " + err.Error())
 		}
-		portNum = portnum
-		if portNum < 1024 {
-			wPrintf("need root to bind on port %d\n", portNum)
+		conf.portNum = portnum
+		if conf.portNum < 1024 {
+			wPrintf("need root to bind on port %d\n", conf.portNum)
 		}
 
 	}
 
 	{ //setting correct verbosity levels
 
-		if verbosityLevel > 0 { //au cas ou l'utilisateur a pensé à metre le niveau de verbosité mais pas d'activer la verbosité
-			isVerbose = true //on l'active
+		if conf.verbosityLevel > 0 { //au cas ou l'utilisateur a pensé à metre le niveau de verbosité mais pas d'activer la verbosité
+			conf.isVerbose = true //on l'active
 		}
-		if isVerbose && verbosityLevel == 0 { //si c'est verbose, le niveau devrait être plus élevé que 0
-			verbosityLevel = 1
+		if conf.isVerbose && conf.verbosityLevel == 0 { //si c'est verbose, le niveau devrait être plus élevé que 0
+			conf.verbosityLevel = 1
 		}
 
 	}
@@ -304,7 +335,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		id       = m.NewRequest() // request id
 	)
 
-	if isAuthEnabled { //basic auth
+	if conf.isAuthEnabled { //basic auth
 		err := CheckAuth(w, r)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -323,13 +354,13 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 		defer m.Log(1, finishedServing)
 	}
 	// the actual URL
-	if isDebug {
+	if conf.isDebug {
 		w.Header().Add("Request-Id", strconv.Itoa(id))
 	}
 
 	vPrintf(1, "[%d] asking for %v\n", id, r.URL.EscapedPath())
 
-	ComposedPath := WorkingDir + path.Clean(r.URL.Path)
+	ComposedPath := conf.WorkingDir + path.Clean(r.URL.Path)
 	//vPrintf(0, "%s\n", ComposedPath)
 	if strings.Contains(r.RequestURI, "../") { // ../ permits a request to access files outside the server's scope
 		//w.Header().Add("Connection", "close")
@@ -368,9 +399,9 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 			lastModified string = time.Now().UTC().Format(http.TimeFormat)
 			content      []byte
 		)
-		switch mode { // checks for index.html
+		switch conf.mode { // checks for index.html
 		default:
-			content, err = render(WorkingDir, r.URL.Path)
+			content, err = render(conf.WorkingDir, r.URL.Path)
 			if err != nil {
 				http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
 				vPrintf(1, "[%d] error rendering directory: %v\n", id, err)
@@ -386,7 +417,7 @@ func (m *mainHandler) ManageGET(w http.ResponseWriter, r *http.Request, writeBod
 				return
 			}
 		case "fileserver":
-			renderedFolder, err := render(WorkingDir, r.URL.Path)
+			renderedFolder, err := render(conf.WorkingDir, r.URL.Path)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				vPrintf(2, "[%d] error reading index.html: %v\n", id, err)
@@ -497,7 +528,7 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TOD
 	io.Copy(os.Stdout, r.Body)
 	return
 	fmt.Println("</body>")
-	if mode != "fileserver" {
+	if conf.mode != "fileserver" {
 		return
 	}
 	var (
@@ -543,7 +574,7 @@ func (m *mainHandler) ManagePOST(w http.ResponseWriter, r *http.Request) { //TOD
 			Fatal(err)
 		}
 		for _, v := range f {
-			file, err := os.Create(WorkingDir + r.URL.Path + "/" + v.FileName)
+			file, err := os.Create(conf.WorkingDir + r.URL.Path + "/" + v.FileName)
 			if err != nil {
 				wPrintln(err)
 				continue
@@ -778,8 +809,8 @@ func ManageServer(server *http.Server) chan int {
 		signal.Notify(channel, os.Interrupt)
 		<-channel
 		dPrintln("interrupt")
-		fmt.Printf("server shutting down in %v\n", shutdowmTimeout.String())
-		ctx, _ := context.WithTimeout(context.Background(), shutdowmTimeout)
+		fmt.Printf("server shutting down in %v\n", conf.shutdowmTimeout.String())
+		ctx, _ := context.WithTimeout(context.Background(), conf.shutdowmTimeout)
 		select {
 		case <-WaitXInterrupt(10, channel):
 			iPrintln("server shutdown forcefully")
@@ -800,48 +831,48 @@ func ManageServer(server *http.Server) chan int {
 func Flags() {
 	{ //flag declaring and parsing
 		{ //on demande le help, commit ou version
-			flag.BoolVar(&isGitCommit, "commit", false, "prints the git commit the code was compiled on")
+			flag.BoolVar(&conf.isGitCommit, "commit", false, "prints the git commit the code was compiled on")
 		}
 		{ //standard
 			//port number
-			flag.StringVar(&port, "port", "8080", "defines the TCP port on which the web server is going to serve (must be a valid port number)") // le port (par défault c'est le 8080)
+			flag.StringVar(&conf.port, "port", "8080", "defines the TCP port on which the web server is going to serve (must be a valid port number)") // le port (par défault c'est le 8080)
 
 			//working dir
-			flag.StringVar(&WorkingDir, "dir", defaultWorkingDir, "defines the directory the server is goig to serve") //le scope du serveur(les fichiers qui seront servit)
+			flag.StringVar(&conf.WorkingDir, "dir", defaultWorkingDir, "defines the directory the server is goig to serve") //le scope du serveur(les fichiers qui seront servit)
 			//	 par défault c'est le fichier duquel le programme a été commencé
 
 		}
 
 		{ //log/info/debugging/on veut du text de couleur
-			flag.BoolVar(&isVerbose, "v", false, "make the program more verbose")               //si on dit pleins d'informations
-			flag.IntVar(&verbosityLevel, "V", 0, "sets the degree of verbosity of the program") //le niveau d'information plus ou moins utiles que l'on dit
+			flag.BoolVar(&conf.isVerbose, "v", false, "make the program more verbose")               //si on dit pleins d'informations
+			flag.IntVar(&conf.verbosityLevel, "V", 0, "sets the degree of verbosity of the program") //le niveau d'information plus ou moins utiles que l'on dit
 
-			flag.BoolVar(&isDebug, "D", false, "used to show internal values usefule for debuging")
+			flag.BoolVar(&conf.isDebug, "D", false, "used to show internal values usefule for debuging")
 
-			flag.BoolVar(&isTellTime, "telltime", false, "each log entry will tell the time it was printed")
+			flag.BoolVar(&conf.isTellTime, "telltime", false, "each log entry will tell the time it was printed")
 		}
 		{ //HTTPS
-			flag.BoolVar(&isTLS, "tls", false, "enables tls encryption (not yet implemented)") //si on utilise une encryption
-			flag.StringVar(&PathCertFile, "certfile", "", "the location of the TLS certificate file")
-			flag.StringVar(&PathKeyFile, "keyfile", "", "the location of the TLS key file")
+			flag.BoolVar(&conf.isTLS, "tls", false, "enables tls encryption (not yet implemented)") //si on utilise une encryption
+			flag.StringVar(&conf.PathCertFile, "certfile", "", "the location of the TLS certificate file")
+			flag.StringVar(&conf.PathKeyFile, "keyfile", "", "the location of the TLS key file")
 		}
 		{ //server specific := time.Unix(1<<63-1, 0)
-			flag.BoolVar(&isKeepAliveEnabled, "A", true, "enables http keep-alives")
-			flag.DurationVar(&shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
-			flag.DurationVar(&requestTimeout, "request-timeout", MaxDuration, "the time the server will wait for the request")
-			flag.StringVar(&mode, "mode", "", "sets server mode")
+			flag.BoolVar(&conf.isKeepAliveEnabled, "A", true, "enables http keep-alives")
+			flag.DurationVar(&conf.shutdowmTimeout, "shutdown-timeout", time.Second*10, "time the server waits for current connections when shutting down")
+			flag.DurationVar(&conf.requestTimeout, "request-timeout", MaxDuration, "the time the server will wait for the request")
+			flag.StringVar(&conf.mode, "mode", "", "sets server mode")
 			{ // web ui flags
-				flag.BoolVar(&isWebUIEnabled, "webui", false, "enables web ui")
-				flag.IntVar(&webUIport, "uiport", 8080, "specifies web ui port")
+				flag.BoolVar(&conf.isWebUIEnabled, "webui", false, "enables web ui")
+				flag.IntVar(&conf.webUIport, "uiport", 8080, "specifies web ui port")
 			}
 		}
 
-		flag.BoolVar(&isColorEnabled, "color", true, "enables or disables color in terminal log")
+		flag.BoolVar(&conf.isColorEnabled, "color", true, "enables or disables color in terminal log")
 
 		{ //auth flags
-			flag.BoolVar(&isAuthEnabled, "auth", false, "enable password access")
-			flag.StringVar(&authPassword, "p", "", "sets the required password when authentification is enabled")
-			flag.StringVar(&authUsername, "u", "", "sets the required password when authentification is enabled")
+			flag.BoolVar(&conf.isAuthEnabled, "auth", false, "enable password access")
+			flag.StringVar(&conf.authPassword, "p", "", "sets the required password when authentification is enabled")
+			flag.StringVar(&conf.authUsername, "u", "", "sets the required password when authentification is enabled")
 		}
 
 		{ // file server (mode is fileServer)
@@ -849,7 +880,7 @@ func Flags() {
 		}
 
 		flag.Parse() //on interprète
-		if isGitCommit {
+		if conf.isGitCommit {
 			fmt.Println(gitCommit)
 			os.Exit(0)
 		}
@@ -857,7 +888,7 @@ func Flags() {
 }
 
 func Fprint(w io.Writer, x ...interface{}) (int, error) {
-	if isTellTime {
+	if conf.isTellTime {
 		return fmt.Fprint(w, time.Now().Format("Jan 2 15:04:05 MST 2006"), fmt.Sprint(x...))
 	}
 	return fmt.Fprint(w, x...)
@@ -917,7 +948,7 @@ func wPrintf(format string, a ...interface{}) (int, error) {
 }
 
 func vPrint(verbosityTreshold int, x ...interface{}) (int, error) {
-	if verbosityLevel < verbosityTreshold {
+	if conf.verbosityLevel < verbosityTreshold {
 		return 0, nil
 	}
 
@@ -935,14 +966,14 @@ func vPrintln(t int, a ...interface{}) (int, error) {
 }
 
 func Colorize(x string, code int) string {
-	if isColorEnabled {
+	if conf.isColorEnabled {
 		return TextColor(code) + x + TextReset()
 	}
 	return x
 }
 
 func dPrintln(x ...interface{}) (int, error) {
-	if !isDebug {
+	if !conf.isDebug {
 		return 0, nil
 	}
 	return dPrint(fmt.Sprintln(x...))
@@ -950,14 +981,14 @@ func dPrintln(x ...interface{}) (int, error) {
 
 func dPrint(x ...interface{}) (int, error) {
 
-	if !isDebug {
+	if !conf.isDebug {
 		return 0, nil
 	}
 	return Fprint(os.Stderr, fmt.Sprintf("%s %s", Colorize("[DEBUG]", ColorCyan), fmt.Sprint(x...)))
 }
 
 func dPrintf(format string, x ...interface{}) (int, error) {
-	if !isDebug {
+	if !conf.isDebug {
 		return 0, nil
 	}
 	return dPrint(fmt.Sprintf(format, x...))
@@ -998,7 +1029,7 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) error {
 	split := strings.Split(string(result), ":")
 	username, password = split[0], split[1]
 	dPrintf("username: %s password: %s\n", username, password)
-	if password != authPassword || username != authUsername {
+	if password != conf.authPassword || username != conf.authUsername {
 		return ErrorUnauthorized
 	}
 	return nil
