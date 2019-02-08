@@ -313,11 +313,7 @@ func (m *mainHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//ManageCONNECT is not implemented yet.
-//
-//it is supposed (when it will be implemented)
-//to give the functionnality
-//of an HTTP proxy
+//ManageConnect esrablished a TCP tunnel between the requested server and the client
 func (m *mainHandler) ManageCONNECT(w http.ResponseWriter, r *http.Request) { //currently shit
 	dPrintf("%#+v\n", r.URL)
 	connRemote, err := net.Dial("tcp", r.URL.Host)
